@@ -1,0 +1,17 @@
+form.center-lg {
+	display: grid;
+	grid-template-columns: auto;
+	grid-template-rows: auto, auto, auto;
+    position: absolute;
+    align-items: center;
+}
+
+div.center-page {
+	display: flex;
+	justify-content: center;
+	margin-top: 25px;
+}
+
+button.margin-top {
+	margin-top: 10px !important;
+}
