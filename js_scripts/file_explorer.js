@@ -2,6 +2,7 @@ const electron = require('electron');
 const {ipcRenderer} = electron;
 
 window.onload = get_file_names();
+let directories;
 
 function get_file_names() {
     console.log('onload event loaded')
@@ -10,6 +11,7 @@ function get_file_names() {
 
 ipcRenderer.on('file-names', function(event, file_names){
 	console.log("file names: ", file_names)
+	directories = file_names;
 	ul = document.getElementById("file-name-list")
 	sub_directories = file_names["Dallin"].sub_directories
 	folder_image_src = "images/file_folder.png"
@@ -23,13 +25,27 @@ ipcRenderer.on('file-names', function(event, file_names){
 		//Create and adjust image
 		var image = document.createElement("IMG")
 		image.setAttribute('src', folder_image_src);
-		image.width = "50";
-		image.height = "50";
+		image.width = "100";
+		image.height = "100";
 
-		li_node.appendChild(image);
 		li_node.appendChild(text);
+		li_node.appendChild(image);
+
+
+
+
 
 		//Add it to <ul id="file-name-list">
 		ul.appendChild(li_node);
 	}
 })
+
+	document.getElementById('file-name-list').ondragstart = (event) => {
+    	event.preventDefault()
+
+    	//Get file path of dragged element
+  		var text = event.target.nextElementSibling.innerHTML;
+  		console.log(text);
+
+   		ipcRenderer.send('ondragstart', '/path/to/item')
+	}
