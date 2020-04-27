@@ -41,16 +41,25 @@ class RequestHandlerSwitch(object):
         return self.get_current_directory_names(request_body=request_body)
 
     def get_current_directory_names(self, request_body):
-        dir_file = os.walk(request_body.get('current_directory'))
+        desired_directory = request_body.get('current_directory')
+        
+        # If the requested directory doesn't exist, create it.
+        if not os.path.exists(desired_directory):
+            os.mkdir(desired_directory)       
+
+        dir_file = os.walk(desired_directory)
         dict_of_dict_of_files = {}
         i = 0
+
+
+
         for root, directory, files in dir_file:
             dict_of_files = {
                 'current_directory': root,
                 'sub_directories': directory,
                 'file_names': files,
             }
-            dict_of_dict_of_files.update({i: dict_of_files})
+            dict_of_dict_of_files.update({os.path.basename(root): dict_of_files})
             i += 1
 
         return json.dumps(dict_of_dict_of_files).encode('UTF-8')

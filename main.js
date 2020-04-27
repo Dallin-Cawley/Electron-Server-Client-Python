@@ -1,17 +1,18 @@
 const {app, BrowserWindow, ipcMain} = require('electron');
 let {PythonShell} = require('python-shell');
 let window;
+let user;
 
   function createWindow () {
     window = new BrowserWindow({
     	width: 700, 
     	height: 400,
+      resizable: false,
         webPreferences: {
         	nodeIntegration: true
         }
     })
     window.loadFile('login.html');
-    window.setResizable(false);
   }
 
   app.on('ready', createWindow);
@@ -27,11 +28,40 @@ let window;
 //Handle login_info
   ipcMain.on('login_info', function(event, login_info){
   	options = {
-  		args: [login_info["username"], login_info["password"]]
+  		args: ['login', login_info["username"], login_info["password"]]
   	}
 
-	PythonShell.run('python_scripts/client.py', options, function  (err, results)  {
- 	if  (err)  throw err;
- 	console.log('results', results);
-	});
+    //Run the client python script with specified options.
+    //The options variable will be the command line arguments
+    //given to the python script.
+    PythonShell.run('python_scripts/client.py', options, function  (err, results)  {
+    
+      if  (err)  throw err;
+      response_body = JSON.parse(results[1])
+
+      //If authenticated, allow user to view their files
+      if (response_body['authenticated'] == true){
+        user = response_body['user']
+        window.loadFile('file_explorer.html');
+        window.setSize(800, 600);
+        window.setResizable(true);
+      }
+      else {
+        event.sender.send('incorrect_login')
+      }
+    
+    });
 });
+
+  ipcMain.on('get-file-names', function(event){
+    console.log('get-file-names caught')
+    options = {
+      args: ['file_view', user]
+    }
+
+    PythonShell.run('python_scripts/client.py', options, function(err, results){
+      if  (err)  throw err;
+      response_body = JSON.parse(results[1])
+      window.webContents.send('file-names', response_body);
+    })
+  })

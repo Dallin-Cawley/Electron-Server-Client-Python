@@ -1,57 +1,32 @@
 import os
 import socket
-from pip._vendor.distlib.compat import raw_input
 import json
-import tkinter
 import sys
+import FunctionCallHandler
 
 user = ""
 login_success = False
-client_socket = socket.socket()
 
 
 def main():
-
-
-    sys.stdout.flush()
-    entry_boxes = {
-        'username': sys.argv[1],
-        'password': sys.argv[2]
-    }
-
-    authenticated, client_socket = login(entry_boxes)
-    if (authenticated):
-        print('true')
-    else:
-        print('false')
-sys.stdout.flush()
-
-
-
-
-def login(entry_boxes):
-    global login_success
-    global user
-    global client_socket
-    body = {
-        'header': 'login',
-        'username': entry_boxes.get('username'),
-        'password': entry_boxes.get('password')
-    }
-
+    client_socket = socket.socket()
+    
     # Connect to remote host
     client_socket.connect((socket.gethostname(), 8001))
-    print(json.loads(client_socket.recv(1024).decode('UTF-8')).get('response'), '\n')
+    print(json.loads(client_socket.recv(1024).decode('UTF-8')).get('response'))
 
-    client_socket.sendall(json.dumps(body).encode('UTF-8'))
-    response = json.loads(client_socket.recv(1024).decode('UTF-8'))
+    header = sys.argv[1]
+    entry_boxes = {
+        'client_socket': client_socket
+    }
+    i = 0
+    for arg in sys.argv:
+        entry_boxes.update({i: arg})
+        i += 1
 
-    if response.get('response') == 'true':
-        user = response.get('user')
-        login_success = True
-        return True, client_socket
-    else:
-        return login_success, False
+
+    print(json.dumps(FunctionCallHandler.FunctionCallHandlerSwitch().handle_function_call(header, entry_boxes)))
+
 
 
 def send_file(client_socket, file_name):
@@ -80,17 +55,6 @@ def send_file(client_socket, file_name):
     except FileNotFoundError:
         print('File not found. Try again.')
         pass
-
-
-def handle_file_view(client_socket, requested_directory):
-    body = {
-        'header': 'ls',
-        'current_directory': requested_directory
-    }
-
-    client_socket.sendall(json.dumps(body).encode('UTF-8'))
-    current_directory_list = client_socket.recv(1024).decode('UTF-8')
-    print(current_directory_list)
 
 
 if __name__ == '__main__':

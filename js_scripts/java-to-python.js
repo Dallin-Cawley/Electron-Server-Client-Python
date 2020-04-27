@@ -1,7 +1,6 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
 
-window.onL
 const login_form = document.getElementById("login-form");
 login_form.addEventListener('submit', submitLoginForm);
 
@@ -13,3 +12,7 @@ function submitLoginForm(event) {
 	};
 	ipcRenderer.send('login_info', login_info);
 }
+
+ipcRenderer.on('incorrect_login', function(event) {
+	document.getElementById('user-pass-incorrect').innerHTML = "Username or Password is Incorrect"
+})

@@ -17,24 +17,25 @@
     	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
 
     	<!-- Self-written CSS -->
-    	<link rel="stylesheet" type="text/css" href="login.css" />
+    	<link rel="stylesheet" type="text/css" href="file_explorer.css" />
 
-      <title>Server Connect</title>
+      <title>File Explorer</title>
     </head>
     <body style="background-color: #99badd;">
 
-    	<h1 style="justify-content: center;">Login</h1>
-    	<div class="center-page">
-      		<form id="login-form" class="form-inline my-2 my-lg-0 center-lg">
-      			<input id="username" class="form-control mr-lg-2 large bg-dark text-white" type="text" placeholder="Username" aria-label="Search" size="40" autofocus>
-      			<input id="password" style="margin-top: 15px;" class="form-control mr-lg-2 large bg-dark text-white" type="password" placeholder="Password" aria-label="Search" size="40">
-      			<button class="btn btn-outline-success my-2 my-sm-0 margin-top" type="submit">Log in</button>
-            <p id="user-pass-incorrect" style="margin-top: 5px;"></p>
-      		</form>
+      <div id="file-explorer-window" class="div-grid-layout">
+        <div id="folder-menu"  class="div-black-border">
+          <h1>First Column</h1>
 
-      	</div>
+        </div>
+        <div id="file-display" class="div-black-border">
+          <h1>Second Column</h1>
+          <ul id="file-name-list" class="file-folder"></ul>
+
+        </div>
+      </div>
 
       	<!-- Self-written JavaScript -->
-    	<script type="text/javascript" src='js_scripts/java-to-python.js'></script>
+    	<script type="text/javascript" src='js_scripts/file_explorer.js'></script>
     </body>
   </html>

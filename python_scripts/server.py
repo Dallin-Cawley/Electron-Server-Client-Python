@@ -44,21 +44,30 @@ def handle_client_connection(client_connection):
     client_connection.sendall(json.dumps({'response': 'Connection Accepted'}).encode('UTF-8'))
     request_handler = RequestHandler.RequestHandlerSwitch()
     while True:
-        data = client_connection.recv(1024).decode('UTF-8')
+        try:
+            # Get request from client
+            data = client_connection.recv(1024)
+            request_body = json.loads(data.decode('UTF-8'))
+            print("Request Body: ", request_body)
 
-        request_body = json.loads(data)
-        request_body.update({'client_connection': client_connection})
-        header = request_body.get("header")
+            # Add the client_socket to the request body for later use
+            request_body.update({'client_connection': client_connection})
+            header = request_body.get("header")
 
-        # When the Client wishes to disconnect
-        if header == 'quit':
-            body = {
-                'response': 'Connection Terminating'
+            # When the Client wishes to disconnect
+            if header == 'quit':
+                body = {
+                    'response': 'Connection Terminating'
+                }
+                client_connection.sendall(json.dumps(body).encode('UTF-8'))
+                break
+
+            client_connection.sendall(request_handler.handle_request(header=header, request_body=request_body))
+        except ValueError:
+            data = {
+            'response': 'Unable to parse Json. Please try again'
             }
-            client_connection.sendall(json.dumps(body).encode('UTF-8'))
-            break
-
-        client_connection.sendall(request_handler.handle_request(header=header, request_body=request_body))
+            continue
 
     client_connection.close()
 
