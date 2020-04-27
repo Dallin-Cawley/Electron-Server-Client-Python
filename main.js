@@ -65,3 +65,10 @@ let user;
       window.webContents.send('file-names', response_body);
     })
   })
+
+  ipcMain.on('ondragstart', (event, filePath) => {
+    event.sender.startDrag({
+      file: filePath,
+      icon: 'images/file_folder.png'
+    })
+})

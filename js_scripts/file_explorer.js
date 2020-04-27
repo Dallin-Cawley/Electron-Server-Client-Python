@@ -24,6 +24,7 @@ ipcRenderer.on('file-names', function(event, file_names){
 
 		//Create and adjust image
 		var image = document.createElement("IMG")
+		image.id = sub_directories[dir_index];
 		image.setAttribute('src', folder_image_src);
 		image.width = "100";
 		image.height = "100";
@@ -32,20 +33,16 @@ ipcRenderer.on('file-names', function(event, file_names){
 		li_node.appendChild(image);
 
 
-
-
-
 		//Add it to <ul id="file-name-list">
 		ul.appendChild(li_node);
 	}
 })
 
 	document.getElementById('file-name-list').ondragstart = (event) => {
-    	event.preventDefault()
+    	event.preventDefault();
 
     	//Get file path of dragged element
-  		var text = event.target.nextElementSibling.innerHTML;
-  		console.log(text);
-
-   		ipcRenderer.send('ondragstart', '/path/to/item')
+    	let item_name = event.target.id;
+    	console.log(directories[item_name])
+   		ipcRenderer.send('ondragstart', directories[item_name].current_directory)
 	}
