@@ -54,7 +54,6 @@ let user;
 });
 
   ipcMain.on('get-file-names', function(event){
-    console.log('get-file-names caught')
     options = {
       args: ['file_view', user]
     }
@@ -62,6 +61,7 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function(err, results){
       if  (err)  throw err;
       response_body = JSON.parse(results[1])
+      response_body["user"] = user;
       window.webContents.send('file-names', response_body);
     })
   })
@@ -72,3 +72,16 @@ let user;
       icon: 'images/file_folder.png'
     })
 })
+
+  ipcMain.on('ondrop', (event, paths) => {
+    file_data_json = JSON.stringify(paths);
+
+    options = {
+      args: ['send_file', file_data_json]
+    }
+
+    PythonShell.run('python_scripts/client.py', options, function(err, results) {
+      console.log('results: ', results);
+    })
+
+    })

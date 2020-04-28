@@ -85,7 +85,7 @@ class RequestHandlerSwitch(object):
 
         # Send a confirmation to Client
         body = {
-            'response': 'File saved'
+            'response': 'file-saved'
         }
 
         return json.dumps(body).encode('UTF-8')
