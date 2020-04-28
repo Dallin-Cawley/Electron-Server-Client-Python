@@ -22,13 +22,14 @@ ipcRenderer.on('file-names', function(event, file_names){
 	sub_directories = file_names[current_user].sub_directories
 	folder_image_src = "images/file_folder.png"
 
+	var i = 0;
 	//Begin dynamically creating the list of files
 	for (dir_index in sub_directories){
 
 		//Create <li> element
 		var li_node = document.createElement("LI");
 		var text = document.createTextNode(sub_directories[dir_index]);
-
+			li_node.id = i;
 		//Create and adjust image
 		var image = document.createElement("IMG")
 		image.id = sub_directories[dir_index];
@@ -42,6 +43,7 @@ ipcRenderer.on('file-names', function(event, file_names){
 
 		//Add it to <ul id="file-name-list">
 		ul.appendChild(li_node);
+		i += 1;
 	}
 })
 
@@ -81,7 +83,9 @@ ipcRenderer.on('file-names', function(event, file_names){
 		//Get file path of element to drop in
     	let drop_dir_name = current_user;
     	end_location = remote_directories[drop_dir_name].current_directory;
-    	console.log("event id: ", event.tagName)
+    	console.log("event id: ", event.id);
+    	console.log("file-display id: ", document.getElementById('file-display').id);
+    	console.log("file-names-list id: ", document.getElementById('file-name-list').id);
 
     	drop_body = {
     		'sending_to': end_location,
