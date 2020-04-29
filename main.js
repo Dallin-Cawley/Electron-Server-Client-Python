@@ -37,7 +37,7 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function  (err, results)  {
     
       if  (err)  throw err;
-      response_body = JSON.parse(results[1])
+      response_body = JSON.parse(results[1]);
 
       //If authenticated, allow user to view their files
       if (response_body['authenticated'] == true){
@@ -62,6 +62,7 @@ let user;
       if  (err)  throw err;
       response_body = JSON.parse(results[1])
       response_body["user"] = user;
+
       window.webContents.send('file-names', response_body);
     })
   })
@@ -74,14 +75,15 @@ let user;
 })
 
   ipcMain.on('ondrop', (event, paths) => {
-    file_data_json = JSON.stringify(paths);
+    console.log("ondrop caught");
 
     options = {
-      args: ['send_file', file_data_json]
+      args: ['send_file', paths]
     }
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {
-      console.log('results: ', results);
+      if  (err)  throw err;
+      console.log('results', results);
     })
 
-    })
+  })

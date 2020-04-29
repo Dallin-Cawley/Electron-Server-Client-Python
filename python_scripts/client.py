@@ -16,16 +16,22 @@ def main():
     print(json.loads(client_socket.recv(1024).decode('UTF-8')).get('response'))
 
     header = sys.argv[1]
+    
     entry_boxes = {
         'client_socket': client_socket
     }
+
     i = 0
     for arg in sys.argv:
         entry_boxes.update({i: arg})
         i += 1
 
-
     print(json.dumps(FunctionCallHandler.FunctionCallHandlerSwitch().handle_function_call(header, entry_boxes)))
+    quit = {
+        'header': 'quit'
+    }
+    client_socket.sendall(json.dumps(quit).encode('UTF-8'))
+    client_socket.close()
 
 
 if __name__ == '__main__':
