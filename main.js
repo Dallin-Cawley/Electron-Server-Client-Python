@@ -60,7 +60,8 @@ let user;
 
     PythonShell.run('python_scripts/client.py', options, function(err, results){
       if  (err)  throw err;
-      response_body = JSON.parse(results[1])
+      response_body = JSON.parse(results[1]);
+      console.log("response body: ", response_body);
       response_body["user"] = user;
 
       window.webContents.send('file-names', response_body);
@@ -84,6 +85,8 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function(err, results) {
       if  (err)  throw err;
       console.log('results', results);
+
+      window.webContents.send('update-file-names', results)
     })
 
   })
