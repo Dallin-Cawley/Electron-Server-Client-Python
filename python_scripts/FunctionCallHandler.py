@@ -56,25 +56,30 @@ class FunctionCallHandlerSwitch(object):
         # is a stringified object that needs to be reloaded.
         file_info = json.loads(function_call_body.get(2))
 
-        try:
 
+
+        # I altered this for loop so this won't work probably
+        try:
+            bytes_of_files = []
             for file_path in file_info.get('files_to_send'):
-                file_size = os.path.getsize(file_path);
-                body = {
-                    'header': 'file',
-                    'file_type': os.path.splitext(file_path)[1],
-                    'file_name': os.path.basename(file_path),
-                    'file_size': file_size,
-                    'directory': file_info.get('sending_to')
-                }
+                file_size += os.path.getsize(file_path);
 
                 file = open(file_path, 'rb')
 
                 file_bytes = file.read(file_size)
+                bytes_of_files.append(file_bytes)
                 file.close()
 
                 client_socket.sendall(json.dumps(body).encode('UTF-8'))
                 client_socket.sendall(file_bytes)
+
+            body = {
+                'header': 'file',
+                'file_type': os.path.splitext(file_path)[1],
+                'file_name': os.path.basename(file_path),
+                'file_size': file_size,
+                'directory': file_info.get('sending_to')
+            }
 
             return json.loads(client_socket.recv(1024).decode('UTF-8'))
         except FileNotFoundError:

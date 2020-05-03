@@ -48,17 +48,19 @@ function create_li_elements(file_body) {
 
 		   	//Get file path of dragged element
 		   	let item_name = event.target.id;
-		   	console.log(remote_directories[item_name]);
+
 			ipcRenderer.send('ondragstart', remote_directories[item_name].current_directory);
 		}
 
 		if (directory == true){
 			//OnDrop events
 			li_node.ondrop = (event) => {
+				event.preventDefault();
+				event.stopPropagation();
 				//Get path of where the file is being moved to
-		    	let drop_dir_name = current_user;
+		    	let drop_dir_name = event.target.id;
 		    	let end_location = remote_directories[drop_dir_name].current_directory;
-		 
+
 		    	//Get path of files to move
 		    	let files_to_send_path = [];
 		    	let event_files_length = event.dataTransfer.files.length;
@@ -70,10 +72,10 @@ function create_li_elements(file_body) {
 
 		    	drop_body = {
 		    		'sending_to': end_location,
-		    		'files_to_send': event.dataTranser.files[0]
+		    		'files_to_send': files_to_send_path
 		    	}
 
-		    	ipcRenderer.send('ondrop', drop_body);
+		    	ipcRenderer.send('ondrop', JSON.stringify(drop_body));
 
 			}
 
