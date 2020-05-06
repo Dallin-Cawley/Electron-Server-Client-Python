@@ -125,6 +125,8 @@ ipcRenderer.on('file-names', function(event, directory_info){
 	create_li_elements(file_body);
 })
 
+//Add all files with their current location to the global
+//remote_directories for easy use when dragging and dropping
 function update_file_paths() {
 	let i = 0
 	for (directory in remote_directories) {
@@ -133,27 +135,26 @@ function update_file_paths() {
 			break;
 		}
 		i++;
+
 		for (file_index in remote_directories[directory].file_names){
+			
 			file = remote_directories[directory].file_names[file_index];
 			let file_path = remote_directories[directory].current_directory + '\\' + file;
-			console.log('file: ', file_path);
+
 			remote_directories[file] = {
 				'current_directory': file_path
 			}
 		}
 	}
-	console.log("updated directories: ", remote_directories)
 }
 
 function droppedInWindow(event) {
 
 	//Get path of where the file is being moved to
-   	let drop_dir_name = current_user;
-   	let end_location = remote_directories[drop_dir_name].current_directory;
+   	let end_location = remote_directories[current_user].current_directory;
  
    	//Get path of files to move
    	let files_to_send_path = [];
-
    	let event_files_length = event.dataTransfer.files.length;
    	let event_files = event.dataTransfer.files;
 

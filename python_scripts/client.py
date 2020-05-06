@@ -31,6 +31,7 @@ def main():
         'header': 'quit'
     }
     client_socket.sendall(json.dumps(quit).encode('UTF-8'))
+    print(json.dumps(client_socket.recv(1024).decode('UTF-8')))
     client_socket.close()
 
 

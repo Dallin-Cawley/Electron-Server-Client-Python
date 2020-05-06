@@ -11,7 +11,7 @@ class RequestHandlerSwitch(object):
             header = header.replace(" ", "_")
 
         method_name = 'handle_' + header
-
+        print("in handle request")
         handler = getattr(self, method_name, lambda: "Unable to complete Request")
 
         return handler(request_body=request_body)
@@ -74,20 +74,36 @@ class RequestHandlerSwitch(object):
         if not os.path.exists(directory):
             os.mkdir(directory)
 
-        # Get the file from the client
-        sent_file = client_connection.recv(request_body.get('file_size'))
-        file_name = os.path.join(directory, request_body.get('file_name'))
-
         # Write the file to specified location
-        file = open(file_name, 'wb')
-        file.write(sent_file)
-        file.close()
+        try:
+            # Prepare file for writing
+            write_to = os.path.join(directory, request_body.get('file_name'))
+            opened_file = open(write_to, 'wb')
+
+            body = {
+                'response': 'ready'
+            }
+            
+            # Send a confirmation to Client
+            client_connection.sendall(json.dumps(body).encode('UTF-8'))
+
+            # If opening the desired location was successful,
+            # get the bytes of the uploaded file and attempt
+            # to write it.
+
+            file = client_connection.recv(request_body.get('file_size'))
+            opened_file.write(file)
+            opened_file.close()
+
+            body = {
+                'response': 'File Saved'
+            }            
+        except IOError:
+            body = {
+                'response': 'Unable to Save File'
+            }
 
         # Send a confirmation to Client
-        body = {
-            'response': 'file-saved'
-        }
-
         return json.dumps(body).encode('UTF-8')
 
     def handle_new_user(self, request_body):

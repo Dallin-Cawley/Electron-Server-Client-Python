@@ -1,5 +1,6 @@
 import json
 import os
+from sys import getsizeof
 
 class FunctionCallHandlerSwitch(object):
 
@@ -56,31 +57,46 @@ class FunctionCallHandlerSwitch(object):
         # is a stringified object that needs to be reloaded.
         file_info = json.loads(function_call_body.get(2))
 
-
-
-        # I altered this for loop so this won't work probably
         try:
-            bytes_of_files = []
+            files = {}
+            i = 0
             for file_path in file_info.get('files_to_send'):
-                file_size += os.path.getsize(file_path);
-
-                file = open(file_path, 'rb')
-
+                
+                if i > 0:
+                    print(json.loads(client_socket.recv(1024).decode('UTF-8')))
+                
+                file_size = os.path.getsize(file_path)
+                
+                file = open(file_path, 'rb');
                 file_bytes = file.read(file_size)
-                bytes_of_files.append(file_bytes)
                 file.close()
 
+                body = {
+                    'header': 'file',
+                    'file_size': file_size,
+                    'directory': file_info.get('sending_to'),
+                    'file_name': os.path.basename(file_path),
+                    'file_type': os.path.splitext(file_path)[1],                    
+                }
+
                 client_socket.sendall(json.dumps(body).encode('UTF-8'))
-                client_socket.sendall(file_bytes)
+                response = json.loads(client_socket.recv(1024).decode('UTF-8'))
 
-            body = {
-                'header': 'file',
-                'file_type': os.path.splitext(file_path)[1],
-                'file_name': os.path.basename(file_path),
-                'file_size': file_size,
-                'directory': file_info.get('sending_to')
-            }
-
+                # If the server successfully opened where the file is being sent to
+                # send the file.
+                #
+                # Else, try again. If that fails, the file was unable to be saved
+                if response.get('response') == 'ready':
+                    client_socket.sendall(file_bytes)
+                else:
+                    client_socket.sendall(json.dumps(body).encode('UTF-8'))
+                    
+                    if json.loads(client_socket.recv(1024).decode('UTF-8')).get('response') == 'ready':
+                        client_socket.sendall(file_bytes)
+                    else:
+                        print(json.loads(client_socket.recv(1024).decode('UTF-8')).get('response'))
+                i += 1
+            
             return json.loads(client_socket.recv(1024).decode('UTF-8'))
         except FileNotFoundError:
             print('File not found. Try again.')
