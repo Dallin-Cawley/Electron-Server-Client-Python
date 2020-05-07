@@ -131,7 +131,10 @@ ipcRenderer.on('file-names', function(event, directory_info){
 	create_li_elements(file_body);
 })
 
-//ipcRenderer.on('update-file-names', function(event, ))
+ipcRenderer.on('update-file-names', function(event, updated_directories) {
+	console.log(updated_directories);
+	console.log("Updating file names")
+})
 
 //Add all files with their current location to the global
 //remote_directories for easy use when dragging and dropping

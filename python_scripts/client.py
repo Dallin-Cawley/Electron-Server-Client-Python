@@ -26,12 +26,15 @@ def main():
         entry_boxes.update({i: arg})
         i += 1
 
-    print(json.dumps(ClientRequestHandler.ClientRequestHandlerSwitch().handle_function_call(header, entry_boxes)))
+    print(json.dumps(ClientRequestHandler.ClientRequestHandlerSwitch().handle_function_call(header, entry_boxes)), flush=True)
+
     quit = {
         'header': 'quit'
     }
+    
     client_socket.sendall(json.dumps(quit).encode('UTF-8'))
-    print(json.dumps(client_socket.recv(1024).decode('UTF-8')))
+    print(json.dumps(client_socket.recv(1024).decode('UTF-8')), flush=True)
+
     client_socket.close()
 
 

@@ -113,7 +113,7 @@ class ClientRequestHandlerSwitch(object):
                 server_save_status.update({'updated_directories': updated_directories})
                 print("server_save_status: ", json.dumps(server_save_status))
 
-            return(server_save_status)
+            return server_save_status
         except FileNotFoundError:
             print('File not found. Try again.')
             pass

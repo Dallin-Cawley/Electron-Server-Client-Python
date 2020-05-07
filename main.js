@@ -83,7 +83,8 @@ let user;
     }
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {
-      if  (err)  throw err;
+      if  (err) throw err;
+      
       console.log('results', results);
 
       //response_body = JSON.parse(results[1]);
