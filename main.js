@@ -86,7 +86,9 @@ let user;
       if  (err)  throw err;
       console.log('results', results);
 
-      window.webContents.send('update-file-names', results)
+      //response_body = JSON.parse(results[1]);
+      //console.log("response_body: ", response_body)
+      window.webContents.send('update-file-names', response_body)
     })
 
   })

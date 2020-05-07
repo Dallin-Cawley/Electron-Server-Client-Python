@@ -2,7 +2,7 @@ import os
 import socket
 import json
 import sys
-import FunctionCallHandler
+import ClientRequestHandler
 
 user = ""
 login_success = False
@@ -26,7 +26,7 @@ def main():
         entry_boxes.update({i: arg})
         i += 1
 
-    print(json.dumps(FunctionCallHandler.FunctionCallHandlerSwitch().handle_function_call(header, entry_boxes)))
+    print(json.dumps(ClientRequestHandler.ClientRequestHandlerSwitch().handle_function_call(header, entry_boxes)))
     quit = {
         'header': 'quit'
     }

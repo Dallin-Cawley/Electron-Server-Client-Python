@@ -3,10 +3,15 @@ const {ipcRenderer} = electron;
 
 window.onload = get_file_names();
 var remote_directories;
-var current_user;
+
+var program_state = {
+	'current_user': null,
+	'current_directory': null,
+}
+
+document.addEventListener("keydown", showPrevDir);
 
 function get_file_names() {
-    console.log('onload event loaded')
     ipcRenderer.send('get-file-names')
 }
 
@@ -44,12 +49,7 @@ function create_li_elements(file_body) {
 		   	event.preventDefault();
 		   	event.stopPropagation();
 
-		   	console.log("this.id: ", event.target.id);
-
-		   	//Get file path of dragged element
-		   	let item_name = event.target.id;
-
-			ipcRenderer.send('ondragstart', remote_directories[item_name].current_directory);
+			ipcRenderer.send('ondragstart', remote_directories[event.target.id].file_path);
 		}
 
 		if (directory == true){
@@ -57,6 +57,7 @@ function create_li_elements(file_body) {
 			li_node.ondrop = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
+				
 				//Get path of where the file is being moved to
 		    	let drop_dir_name = event.target.id;
 		    	let end_location = remote_directories[drop_dir_name].current_directory;
@@ -91,7 +92,12 @@ function create_li_elements(file_body) {
 				event.preventDefault();
 				event.stopPropagation();
 				event.currentTarget.style.backgroundColor = '#99badd';
-			}	
+			}
+
+			//Double Click Event
+			li_node.ondblclick = (event) => {
+				showDir(event);
+			}
 		}
 
 		//Add it to <ul id="file-name-list">
@@ -100,18 +106,18 @@ function create_li_elements(file_body) {
 }
 
 ipcRenderer.on('file-names', function(event, directory_info){
-	console.log("file names: ", directory_info);
 
 	//Localize these variables for future use
-	current_user = directory_info["user"];
+	program_state.current_user = directory_info["user"];
 	remote_directories = directory_info;
+	program_state.current_directory = program_state.current_directory;
 
 	update_file_paths()
 
 	//Create Directories as <li>
 	file_body = {
 		'directory': true,
-		'to_display': directory_info[current_user].sub_directories,
+		'to_display': directory_info[program_state.current_user].sub_directories,
 		'image': 'images/file_folder.png'
 	}
 
@@ -119,39 +125,52 @@ ipcRenderer.on('file-names', function(event, directory_info){
 
 	//Create Files as <li>
 	file_body['directory'] = false;
-	file_body['to_display'] = directory_info[current_user].file_names;
+	file_body['to_display'] = directory_info[program_state.current_user].file_names;
 	file_body['image'] = 'images/txt-file-icon.png'
 
 	create_li_elements(file_body);
 })
 
+//ipcRenderer.on('update-file-names', function(event, ))
+
 //Add all files with their current location to the global
 //remote_directories for easy use when dragging and dropping
 function update_file_paths() {
-	let i = 0
+	let i = 1
 	for (directory in remote_directories) {
-		console.log('directory: ', directory);
-		if (directory == current_user && i > 0) {
+
+		if (directory == program_state.current_user && i > 1) {
 			break;
 		}
+
 		i++;
 
+		//For easy access to file paths later
 		for (file_index in remote_directories[directory].file_names){
 			
 			file = remote_directories[directory].file_names[file_index];
 			let file_path = remote_directories[directory].current_directory + '\\' + file;
 
 			remote_directories[file] = {
-				'current_directory': file_path
+				'file_path': file_path
 			}
 		}
+
+		//For easy access to parent directories later
+		for (sub_directory in remote_directories[directory].sub_directories) {
+			if (remote_directories[sub_directory] != null) {
+				remote_directories[sub_directory]["parent_directory"] = directory;
+			}
+		}
+
+		remote_directories[directory]["parent_directory"] = program_state.current_user;
 	}
 }
 
 function droppedInWindow(event) {
 
 	//Get path of where the file is being moved to
-   	let end_location = remote_directories[current_user].current_directory;
+   	let end_location = remote_directories[program_state.current_user].current_directory;
  
    	//Get path of files to move
    	let files_to_send_path = [];
@@ -180,3 +199,74 @@ function draggedLeftWindow(event) {
 	event.preventDefault();
 	event.currentTarget.style.backgroundColor = '#99badd';
 }
+
+function showDir(event) {
+	event.preventDefault();
+	event.stopPropagation();
+
+	program_state.current_directory = event.target.id;
+	selected_directory = remote_directories[program_state.current_directory];
+
+	//Remove current <li> elements
+	file_list_ul = document.getElementById("file-name-list");
+
+	while(file_list_ul.firstChild) {
+		file_list_ul.removeChild(file_list_ul.lastChild);
+	}
+
+	//Create Directories as <li>
+	file_body = {
+		'directory': true,
+		'to_display': selected_directory.sub_directories,
+		'image': 'images/file_folder.png'
+	}
+
+	create_li_elements(file_body);
+
+	//Create Files as <li>
+	file_body['directory'] = false;
+	file_body['to_display'] = selected_directory.file_names;
+	file_body['image'] = 'images/txt-file-icon.png'
+
+	create_li_elements(file_body);
+
+}
+
+function showPrevDir(event) {
+
+    var key = event.keyCode || event.charCode;
+
+    if( key == 8) {
+
+    	if (program_state.current_directory == program_state.current_user) {
+    		return false;
+    	}
+
+    	previous_directory = remote_directories[program_state.current_directory]["parent_directory"];
+    	console.log("previous directory: ", previous_directory);
+    	console.log("current_directory: ", program_state.current_directory);
+    	selected_directory = remote_directories[previous_directory];
+	    //Remove current <li> elements
+		file_list_ul = document.getElementById("file-name-list");
+
+		while(file_list_ul.firstChild) {
+			file_list_ul.removeChild(file_list_ul.lastChild);
+		}
+
+		//Create Directories as <li>
+		file_body = {
+			'directory': true,
+			'to_display': selected_directory.sub_directories,
+			'image': 'images/file_folder.png'
+		}
+
+		create_li_elements(file_body);
+
+		//Create Files as <li>
+		file_body['directory'] = false;
+		file_body['to_display'] = selected_directory.file_names;
+		file_body['image'] = 'images/txt-file-icon.png'
+
+		create_li_elements(file_body);
+    }
+};

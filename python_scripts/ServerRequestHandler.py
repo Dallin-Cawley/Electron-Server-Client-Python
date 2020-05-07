@@ -5,7 +5,7 @@ import json
 import globals
 
 
-class RequestHandlerSwitch(object):
+class ServerRequestHandlerSwitch(object):
     def handle_request(self, header, request_body):
         if " " in header:
             header = header.replace(" ", "_")
@@ -23,8 +23,7 @@ class RequestHandlerSwitch(object):
                                                  globals.users.get(request_body.get('username')).get('password')):
                 body = {
                     'response': 'true',
-                    'user': 'Dallin' 
-                    # globals.users.get(request_body.get('username')).get('user')
+                    'user': globals.users.get(request_body.get('username')).get('user')
                 }
             else:
                 body = {
@@ -61,8 +60,10 @@ class RequestHandlerSwitch(object):
             }
             dict_of_dict_of_files.update({os.path.basename(root): dict_of_files})
             i += 1
-
-        return json.dumps(dict_of_dict_of_files).encode('UTF-8')
+        if request_body.get('from') == 'self':
+            return dict_of_dict_of_files
+        else:
+            return json.dumps(dict_of_dict_of_files).encode('UTF-8')
 
     def handle_file(self, request_body):
         # Create file path
@@ -96,8 +97,12 @@ class RequestHandlerSwitch(object):
             opened_file.close()
 
             body = {
-                'response': 'File Saved'
-            }            
+                'response': 'File Saved',
+                'updated_directories': self.get_current_directory_names(request_body={'current_directory': directory,
+                                                                                      'from': 'self'})
+            }        
+
+            print(body)    
         except IOError:
             body = {
                 'response': 'Unable to Save File'

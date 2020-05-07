@@ -1,8 +1,8 @@
 import socket
-from _thread import *
+from _thread import start_new_thread
 from pip._vendor.distlib.compat import raw_input
 import json
-import RequestHandler
+import ServerRequestHandler
 import globals
 
 
@@ -42,7 +42,7 @@ def handle_connections(server_socket):
 def handle_client_connection(client_connection):
     # Handle the connection
     client_connection.sendall(json.dumps({'response': 'Connection Accepted'}).encode('UTF-8'))
-    request_handler = RequestHandler.RequestHandlerSwitch()
+    request_handler = ServerRequestHandler.ServerRequestHandlerSwitch()
     while True:
         try:
             # Get request from client

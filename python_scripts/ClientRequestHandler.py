@@ -2,7 +2,7 @@ import json
 import os
 from sys import getsizeof
 
-class FunctionCallHandlerSwitch(object):
+class ClientRequestHandlerSwitch(object):
 
     def handle_function_call(self, header, function_call_body):
         method_name = 'handle_' + header
@@ -11,7 +11,7 @@ class FunctionCallHandlerSwitch(object):
         return handler(function_call_body=function_call_body)
 
 
-    def handle_login(selv, function_call_body):
+    def handle_login(self, function_call_body):
         client_socket = function_call_body.get('client_socket')
 
         body = {
@@ -48,7 +48,7 @@ class FunctionCallHandlerSwitch(object):
         client_socket.sendall(json.dumps(body).encode('UTF-8'))
         current_directory_list = client_socket.recv(1024).decode('UTF-8')
 
-        return json.loads(current_directory_list);
+        return json.loads(current_directory_list)
 
     def handle_send_file(self, function_call_body):
         client_socket = function_call_body.get('client_socket')
@@ -58,8 +58,13 @@ class FunctionCallHandlerSwitch(object):
         file_info = json.loads(function_call_body.get(2))
 
         try:
-            files = {}
             i = 0
+
+            server_save_status = {
+                'updated_directories': '',
+                'file_save_failures': []
+            }
+
             for file_path in file_info.get('files_to_send'):
                 
                 if i > 0:
@@ -67,7 +72,7 @@ class FunctionCallHandlerSwitch(object):
                 
                 file_size = os.path.getsize(file_path)
                 
-                file = open(file_path, 'rb');
+                file = open(file_path, 'rb')
                 file_bytes = file.read(file_size)
                 file.close()
 
@@ -80,24 +85,44 @@ class FunctionCallHandlerSwitch(object):
                 }
 
                 client_socket.sendall(json.dumps(body).encode('UTF-8'))
-                response = json.loads(client_socket.recv(1024).decode('UTF-8'))
+                first_try = json.loads(client_socket.recv(1024).decode('UTF-8'))
 
                 # If the server successfully opened where the file is being sent to
                 # send the file.
                 #
                 # Else, try again. If that fails, the file was unable to be saved
-                if response.get('response') == 'ready':
+                if first_try.get('response') == 'ready':
                     client_socket.sendall(file_bytes)
+
+                    if not save_status(client_socket=client_socket):
+                        server_save_status.get('file_save_failure').append(file_path)
                 else:
                     client_socket.sendall(json.dumps(body).encode('UTF-8'))
+                    second_try = json.loads(client_socket.recv(1024).decode('UTF-8'))
                     
-                    if json.loads(client_socket.recv(1024).decode('UTF-8')).get('response') == 'ready':
+                    if second_try.get('response') == 'ready':
                         client_socket.sendall(file_bytes)
+
+                        if not save_status(client_socket=client_socket):
+                            server_save_status.get('file_save_failure').append(file_path)
                     else:
-                        print(json.loads(client_socket.recv(1024).decode('UTF-8')).get('response'))
+                        print(second_try.get('response'))
                 i += 1
-            
-            return json.loads(client_socket.recv(1024).decode('UTF-8'))
+
+                updated_directories = json.loads(client_socket.recv(1024).decode('UTF-8'))
+                server_save_status.update({'updated_directories': updated_directories})
+                print("server_save_status: ", json.dumps(server_save_status))
+
+            return(server_save_status)
         except FileNotFoundError:
             print('File not found. Try again.')
             pass
+
+def save_status(client_socket):
+    status = json.loads(client_socket.recv(1024).decode('UTF-8'))
+    print(status)
+
+    if status.get('response') == 'File Saved':
+        return True
+    else:
+        return False   
