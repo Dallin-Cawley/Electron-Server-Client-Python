@@ -12,7 +12,7 @@ def main():
     server_socket = socket.socket()
 
     # Bind the socket to a port for use
-    server_socket.bind((socket.gethostname(), 8001))
+    server_socket.bind(('', 8001))
 
     # Listen for a connection
     server_socket.listen()
