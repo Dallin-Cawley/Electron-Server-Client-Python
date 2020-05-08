@@ -220,8 +220,7 @@ function showDirOnEvent(event) {
 	event.preventDefault();
 	event.stopPropagation();
 
-	program_state.current_directory = event.target.id;
-	selected_directory = remote_directories[program_state.current_directory];
+	selected_directory = remote_directories[event.target.id];
 
 	//Remove current <li> elements
 	file_list_ul = document.getElementById("file-name-list");
@@ -245,10 +244,12 @@ function showDirOnEvent(event) {
 	file_body['image'] = 'images/txt-file-icon.png'
 
 	create_li_elements(file_body);
+
+	program_state.current_directory = event.target.id;
 }
 
 function showDir() {
-	console.log("Refreshed Directory view.\n")
+
 	//Remove current <li> elements
 	file_list_ul = document.getElementById("file-name-list");
 
