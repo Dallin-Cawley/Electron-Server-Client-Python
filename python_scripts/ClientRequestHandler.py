@@ -67,8 +67,8 @@ class ClientRequestHandlerSwitch(object):
 
             for file_path in file_info.get('files_to_send'):
                 
-                if i > 0:
-                    print(json.loads(client_socket.recv(1024).decode('UTF-8')))
+                # if i > 0:
+                #    print(json.loads(client_socket.recv(1024).decode('UTF-8')))
                 
                 file_size = os.path.getsize(file_path)
                 
@@ -91,10 +91,12 @@ class ClientRequestHandlerSwitch(object):
                 # send the file.
                 #
                 # Else, try again. If that fails, the file was unable to be saved
+                updated_directories = ''
                 if first_try.get('response') == 'ready':
                     client_socket.sendall(file_bytes)
+                    status, updated_directories = save_status(client_socket=client_socket)
 
-                    if not save_status(client_socket=client_socket):
+                    if not status:
                         server_save_status.get('file_save_failure').append(file_path)
                 else:
                     client_socket.sendall(json.dumps(body).encode('UTF-8'))
@@ -103,15 +105,18 @@ class ClientRequestHandlerSwitch(object):
                     if second_try.get('response') == 'ready':
                         client_socket.sendall(file_bytes)
 
-                        if not save_status(client_socket=client_socket):
-                            server_save_status.get('file_save_failure').append(file_path)
+                    status, updated_directories = save_status(client_socket=client_socket)
+                    
+                    if not status:
+                        server_save_status.get('file_save_failure').append(file_path)
                     else:
                         print(second_try.get('response'))
                 i += 1
 
-                updated_directories = json.loads(client_socket.recv(1024).decode('UTF-8'))
+                # Get the server's directory information to maintain client accuracy
                 server_save_status.update({'updated_directories': updated_directories})
-                print("server_save_status: ", json.dumps(server_save_status))
+                
+            print(json.dumps(server_save_status))
 
             return server_save_status
         except FileNotFoundError:
@@ -120,9 +125,8 @@ class ClientRequestHandlerSwitch(object):
 
 def save_status(client_socket):
     status = json.loads(client_socket.recv(1024).decode('UTF-8'))
-    print(status)
 
     if status.get('response') == 'File Saved':
-        return True
+        return True, status.get('updated_directories')
     else:
-        return False   
+        return False, status.get('updated_directories')   

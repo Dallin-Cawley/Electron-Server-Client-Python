@@ -37,6 +37,7 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function  (err, results)  {
     
       if  (err)  throw err;
+      console.log(results)
       response_body = JSON.parse(results[1]);
 
       //If authenticated, allow user to view their files
@@ -77,18 +78,18 @@ let user;
 
   ipcMain.on('ondrop', (event, paths) => {
     console.log("ondrop caught");
+    console.log(JSON.stringify(paths));
 
     options = {
       args: ['send_file', paths]
     }
 
-    PythonShell.run('python_scripts/client.py', options, function(err, results) {
+    PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-      
-      console.log('results', results);
+      console.log('results', results); 
 
-      //response_body = JSON.parse(results[1]);
-      //console.log("response_body: ", response_body)
+      response_body = JSON.parse(results[1]);
+      console.log("response_body: ", response_body)
       window.webContents.send('update-file-names', response_body)
     })
 

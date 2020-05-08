@@ -102,7 +102,7 @@ class ServerRequestHandlerSwitch(object):
                                                                                       'from': 'self'})
             }        
 
-            print(body)    
+            print("Sending to Client: ", body, '\n\n')    
         except IOError:
             body = {
                 'response': 'Unable to Save File'

@@ -16,7 +16,6 @@ def main():
     print(json.loads(client_socket.recv(1024).decode('UTF-8')).get('response'))
 
     header = sys.argv[1]
-    
     entry_boxes = {
         'client_socket': client_socket
     }

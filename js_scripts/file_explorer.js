@@ -7,6 +7,7 @@ var remote_directories;
 var program_state = {
 	'current_user': null,
 	'current_directory': null,
+	'dropped_in_window': null
 }
 
 document.addEventListener("keydown", showPrevDir);
@@ -96,7 +97,7 @@ function create_li_elements(file_body) {
 
 			//Double Click Event
 			li_node.ondblclick = (event) => {
-				showDir(event);
+				showDirOnEvent(event);
 			}
 		}
 
@@ -110,7 +111,7 @@ ipcRenderer.on('file-names', function(event, directory_info){
 	//Localize these variables for future use
 	program_state.current_user = directory_info["user"];
 	remote_directories = directory_info;
-	program_state.current_directory = program_state.current_directory;
+	program_state.current_directory = program_state.current_user;
 
 	update_file_paths()
 
@@ -131,9 +132,19 @@ ipcRenderer.on('file-names', function(event, directory_info){
 	create_li_elements(file_body);
 })
 
-ipcRenderer.on('update-file-names', function(event, updated_directories) {
-	console.log(updated_directories);
-	console.log("Updating file names")
+ipcRenderer.on('update-file-names', function(event, response_body) {
+	updated_directories = response_body["updated_directories"];
+
+	for (dir_key in updated_directories) {
+		updated_directories[dir_key]["parent_directory"] = remote_directories[dir_key].parent_directory;
+		remote_directories[dir_key] = updated_directories[dir_key];
+	}
+
+	if (program_state.dropped_in_window == true){
+		showDir();
+		program_state.dropped_in_window = false;
+	}
+
 })
 
 //Add all files with their current location to the global
@@ -188,8 +199,10 @@ function droppedInWindow(event) {
    	drop_body = {
    		'sending_to': end_location,
    		'files_to_send': files_to_send_path
-   	}
-
+	   }
+	   
+	program_state.dropped_in_window = true;
+	event.currentTarget.style.backgroundColor = '#99badd';
    	ipcRenderer.send('ondrop', JSON.stringify(drop_body));
 }
 
@@ -203,7 +216,7 @@ function draggedLeftWindow(event) {
 	event.currentTarget.style.backgroundColor = '#99badd';
 }
 
-function showDir(event) {
+function showDirOnEvent(event) {
 	event.preventDefault();
 	event.stopPropagation();
 
@@ -232,7 +245,34 @@ function showDir(event) {
 	file_body['image'] = 'images/txt-file-icon.png'
 
 	create_li_elements(file_body);
+}
 
+function showDir() {
+	console.log("Refreshed Directory view.\n")
+	//Remove current <li> elements
+	file_list_ul = document.getElementById("file-name-list");
+
+	while(file_list_ul.firstChild) {
+		file_list_ul.removeChild(file_list_ul.lastChild);
+	}
+
+	console.log("Current Directory: ", program_state.current_directory)
+	//Create Directories as <li>
+	selected_directory = remote_directories[program_state.current_directory];
+	file_body = {
+		'directory': true,
+		'to_display': selected_directory.sub_directories,
+		'image': 'images/file_folder.png'
+	}
+
+	create_li_elements(file_body);
+
+	//Create Files as <li>
+	file_body['directory'] = false;
+	file_body['to_display'] = selected_directory.file_names;
+	file_body['image'] = 'images/txt-file-icon.png'
+
+	create_li_elements(file_body);
 }
 
 function showPrevDir(event) {
@@ -246,10 +286,10 @@ function showPrevDir(event) {
     	}
 
     	previous_directory = remote_directories[program_state.current_directory]["parent_directory"];
-    	console.log("previous directory: ", previous_directory);
-    	console.log("current_directory: ", program_state.current_directory);
+    	
     	selected_directory = remote_directories[previous_directory];
-	    //Remove current <li> elements
+		//Remove current <li> elements
+		console.log("Selected Directory: ", selected_directory, "\n");
 		file_list_ul = document.getElementById("file-name-list");
 
 		while(file_list_ul.firstChild) {

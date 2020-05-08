@@ -9,10 +9,10 @@ import globals
 def main():
     globals.init()
     # Create a socket
-    server_socket = socket.socket()
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to a port for use
-    server_socket.bind(('', 8001))
+    server_socket.bind(('0.0.0.0', 8001))
 
     # Listen for a connection
     server_socket.listen()
@@ -48,7 +48,7 @@ def handle_client_connection(client_connection):
             # Get request from client
             data = client_connection.recv(1024)
             request_body = json.loads(data.decode('UTF-8'))
-            print("Request Body: ", request_body)
+            print("Request Body: ", request_body, "\n\n")
 
             # Add the client_socket to the request body for later use
             request_body.update({'client_connection': client_connection})
