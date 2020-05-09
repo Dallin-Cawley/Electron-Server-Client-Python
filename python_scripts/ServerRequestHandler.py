@@ -34,7 +34,7 @@ class ServerRequestHandlerSwitch(object):
                 'response': 'false'
             }
 
-        return json.dumps(body).encode('UTF-8')
+        return json.dumps(body)
 
     def handle_ls(self, request_body):
         return self.get_current_directory_names(request_body=request_body)
@@ -60,10 +60,12 @@ class ServerRequestHandlerSwitch(object):
             }
             dict_of_dict_of_files.update({os.path.basename(root): dict_of_files})
             i += 1
+
         if request_body.get('from') == 'self':
             return dict_of_dict_of_files
         else:
-            return json.dumps(dict_of_dict_of_files).encode('UTF-8')
+            print("returning json\n")
+            return json.dumps(dict_of_dict_of_files)
 
     def handle_file(self, request_body):
         # Create file path
@@ -109,7 +111,7 @@ class ServerRequestHandlerSwitch(object):
             }
 
         # Send a confirmation to Client
-        return json.dumps(body).encode('UTF-8')
+        return json.dumps(body)
 
     def handle_new_user(self, request_body):
         hashed_password = security.encrypt_password(request_body.get('password'))
@@ -127,4 +129,4 @@ class ServerRequestHandlerSwitch(object):
             'response': 'User Created'
         }
 
-        return json.dumps(body).encode('UTF-8')
+        return json.dumps(body)

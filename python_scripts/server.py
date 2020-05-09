@@ -61,8 +61,13 @@ def handle_client_connection(client_connection):
                 }
                 client_connection.sendall(json.dumps(body).encode('UTF-8'))
                 break
-
-            client_connection.sendall(request_handler.handle_request(header=header, request_body=request_body))
+            
+            sending_json = request_handler.handle_request(header=header, request_body=request_body)
+            body = {
+                'size': len(sending_json.encode('UTF-8'))
+            }
+            client_connection.sendall(json.dumps(body).encode('UTF-8'))
+            client_connection.sendall(sending_json.encode('UTF-8'))
         except ValueError:
             data = {
             'response': 'Unable to parse Json. Please try again'

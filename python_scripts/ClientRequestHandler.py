@@ -21,7 +21,8 @@ class ClientRequestHandlerSwitch(object):
         }
 
         client_socket.sendall(json.dumps(body).encode('UTF-8'))
-        response = json.loads(client_socket.recv(1024).decode('UTF-8'))
+        recieving_size = json.loads(client_socket.recv(1024).decode('UTF-8'))
+        response = json.loads(client_socket.recv(recieving_size.get('size')).decode('UTF-8'))
 
         if response.get('response') == 'true':
             response_body = {
@@ -46,7 +47,8 @@ class ClientRequestHandlerSwitch(object):
         }
 
         client_socket.sendall(json.dumps(body).encode('UTF-8'))
-        current_directory_list = client_socket.recv(1024).decode('UTF-8')
+        recieving_size = json.loads(client_socket.recv(1024).decode('UTF-8'))
+        current_directory_list = client_socket.recv(recieving_size.get('size')).decode('UTF-8')
 
         return json.loads(current_directory_list)
 
@@ -85,7 +87,8 @@ class ClientRequestHandlerSwitch(object):
                 }
 
                 client_socket.sendall(json.dumps(body).encode('UTF-8'))
-                first_try = json.loads(client_socket.recv(1024).decode('UTF-8'))
+                recieving_size = json.loads(client_socket.recv(1024).decode('UTF-8'))
+                first_try = json.loads(client_socket.recv(recieving_size.get('size')).decode('UTF-8'))
 
                 # If the server successfully opened where the file is being sent to
                 # send the file.

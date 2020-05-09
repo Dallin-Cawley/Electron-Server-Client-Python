@@ -150,14 +150,18 @@ ipcRenderer.on('update-file-names', function(event, response_body) {
 //Add all files with their current location to the global
 //remote_directories for easy use when dragging and dropping
 function update_file_paths() {
-	let i = 1
+	let i = 0
+	let j = 0
+	console.log('\nRemote directories Before:', remote_directories)
 	for (directory in remote_directories) {
-
-		if (directory == program_state.current_user && i > 1) {
+		console.log('Directory ', j,':', directory);
+		j++;
+		if (directory == 'user') {
 			break;
 		}
-
-		i++;
+		else if (directory == program_state.current_user) {
+			i++;
+		}
 
 		//For easy access to file paths later
 		for (file_index in remote_directories[directory].file_names){
@@ -169,16 +173,19 @@ function update_file_paths() {
 				'file_path': file_path
 			}
 		}
-
+		console.log("Before adding parent directory")
 		//For easy access to parent directories later
-		for (sub_directory in remote_directories[directory].sub_directories) {
-			if (remote_directories[sub_directory] != null) {
-				remote_directories[sub_directory]["parent_directory"] = directory;
+		let sub_directories = remote_directories[directory].sub_directories;
+
+		if (sub_directories.length > 0) {
+			for (sub_directory of sub_directories) {
+				remote_directories[sub_directory].parent_directory = directory;
 			}
 		}
 
-		remote_directories[directory]["parent_directory"] = program_state.current_user;
+		// remote_directories[directory]["parent_directory"] = program_state.current_user;
 	}
+	console.log('\nRemote directories After: ', remote_directories)
 }
 
 function droppedInWindow(event) {
@@ -288,7 +295,8 @@ function showPrevDir(event) {
 
     	previous_directory = remote_directories[program_state.current_directory]["parent_directory"];
     	
-    	selected_directory = remote_directories[previous_directory];
+		selected_directory = remote_directories[previous_directory];
+		
 		//Remove current <li> elements
 		console.log("Selected Directory: ", selected_directory, "\n");
 		file_list_ul = document.getElementById("file-name-list");
@@ -312,5 +320,7 @@ function showPrevDir(event) {
 		file_body['image'] = 'images/txt-file-icon.png'
 
 		create_li_elements(file_body);
+
+		program_state.current_directory = previous_directory;
     }
 };
