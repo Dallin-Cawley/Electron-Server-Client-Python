@@ -64,6 +64,7 @@ let user;
       response_body = JSON.parse(results[1]);
       console.log("response body: ", response_body);
       response_body["user"] = user;
+      console.log("base_path: ", response_body["base_path"]);
 
       window.webContents.send('file-names', response_body);
     })
@@ -74,7 +75,7 @@ let user;
       file: filePath,
       icon: 'images/file_folder.png'
     })
-})
+  })
 
   ipcMain.on('ondrop', (event, paths) => {
     console.log("ondrop caught");

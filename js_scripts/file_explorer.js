@@ -1,12 +1,14 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
+const path = require('path');
 
 window.onload = get_file_names();
 var remote_directories;
 
 var program_state = {
-	'current_user': null,
+	'base_directory': null,
 	'current_directory': null,
+	'previous_directory': null,
 	'dropped_in_window': null
 }
 
@@ -106,19 +108,22 @@ function create_li_elements(file_body) {
 	}
 }
 
+//file-names is thrown after a successful login to localize and display
+//directory and file names.
 ipcRenderer.on('file-names', function(event, directory_info){
 
 	//Localize these variables for future use
-	program_state.current_user = directory_info["user"];
+	program_state.base_directory = directory_info.base_path;
 	remote_directories = directory_info;
-	program_state.current_directory = program_state.current_user;
+	program_state.current_directory = program_state.base_directory;
 
 	update_file_paths()
-
+	//console.log("remote directories: ", remote_directories);
 	//Create Directories as <li>
+	console.log("base_directory: ", program_state.base_directory);
 	file_body = {
 		'directory': true,
-		'to_display': directory_info[program_state.current_user].sub_directories,
+		'to_display': directory_info[program_state.base_directory].sub_directories,
 		'image': 'images/file_folder.png'
 	}
 
@@ -126,7 +131,7 @@ ipcRenderer.on('file-names', function(event, directory_info){
 
 	//Create Files as <li>
 	file_body['directory'] = false;
-	file_body['to_display'] = directory_info[program_state.current_user].file_names;
+	file_body['to_display'] = directory_info[program_state.base_directory].file_names;
 	file_body['image'] = 'images/txt-file-icon.png'
 
 	create_li_elements(file_body);
@@ -151,15 +156,11 @@ ipcRenderer.on('update-file-names', function(event, response_body) {
 //remote_directories for easy use when dragging and dropping
 function update_file_paths() {
 	let i = 0
-	let j = 0
-	console.log('\nRemote directories Before:', remote_directories)
 	for (directory in remote_directories) {
-		console.log('Directory ', j,':', directory);
-		j++;
 		if (directory == 'user') {
 			break;
 		}
-		else if (directory == program_state.current_user) {
+		else if (directory == program_state.base_path) {
 			i++;
 		}
 
@@ -173,25 +174,23 @@ function update_file_paths() {
 				'file_path': file_path
 			}
 		}
-		console.log("Before adding parent directory")
 		//For easy access to parent directories later
 		let sub_directories = remote_directories[directory].sub_directories;
 
 		if (sub_directories.length > 0) {
-			for (sub_directory of sub_directories) {
-				remote_directories[sub_directory].parent_directory = directory;
+			for (i = 0; i < sub_directories.length; i++) {
+				sub_dir_index = path.join(directory, sub_directories[i]);
+				console.log("sub_dir_index: ", sub_dir_index);
+				remote_directories[sub_dir_index].parent_directory = directory;
 			}
 		}
-
-		// remote_directories[directory]["parent_directory"] = program_state.current_user;
 	}
-	console.log('\nRemote directories After: ', remote_directories)
 }
 
 function droppedInWindow(event) {
 
 	//Get path of where the file is being moved to
-   	let end_location = remote_directories[program_state.current_user].current_directory;
+   	let end_location = remote_directories[program_state.base_directory].current_directory;
  
    	//Get path of files to move
    	let files_to_send_path = [];
@@ -228,7 +227,7 @@ function showDirOnEvent(event) {
 	event.stopPropagation();
 
 	selected_directory = remote_directories[event.target.id];
-
+	
 	//Remove current <li> elements
 	file_list_ul = document.getElementById("file-name-list");
 
@@ -253,6 +252,8 @@ function showDirOnEvent(event) {
 	create_li_elements(file_body);
 
 	program_state.current_directory = event.target.id;
+	program_state.previous_directory = remote_directories[event.target.id].parent_directory;
+
 }
 
 function showDir() {
@@ -264,7 +265,6 @@ function showDir() {
 		file_list_ul.removeChild(file_list_ul.lastChild);
 	}
 
-	console.log("Current Directory: ", program_state.current_directory)
 	//Create Directories as <li>
 	selected_directory = remote_directories[program_state.current_directory];
 	file_body = {
@@ -286,19 +286,17 @@ function showDir() {
 function showPrevDir(event) {
 
     var key = event.keyCode || event.charCode;
-
+	
+	//Key 8 is 'backspace'
     if( key == 8) {
-
-    	if (program_state.current_directory == program_state.current_user) {
+		//If we are as far back as is allowed, don't do anything
+    	if (program_state.current_directory == program_state.base_directory) {
     		return false;
     	}
-
-    	previous_directory = remote_directories[program_state.current_directory]["parent_directory"];
     	
-		selected_directory = remote_directories[previous_directory];
+		selected_directory = remote_directories[program_state.previous_directory];
 		
 		//Remove current <li> elements
-		console.log("Selected Directory: ", selected_directory, "\n");
 		file_list_ul = document.getElementById("file-name-list");
 
 		while(file_list_ul.firstChild) {
@@ -321,6 +319,8 @@ function showPrevDir(event) {
 
 		create_li_elements(file_body);
 
-		program_state.current_directory = previous_directory;
+		program_state.current_directory = program_state.previous_directory;
+		program_state.previous_directory = remote_directories[program_state.current_directory].parent_directory;
+
     }
 };

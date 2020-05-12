@@ -48,23 +48,25 @@ class ServerRequestHandlerSwitch(object):
 
         dir_file = os.walk(desired_directory)
         dict_of_dict_of_files = {}
-        i = 0
 
 
 
         for root, directory, files in dir_file:
             dict_of_files = {
-                'current_directory': root,
+                'name': os.path.basename(root),
+                'path': root,
                 'sub_directories': directory,
                 'file_names': files,
             }
-            dict_of_dict_of_files.update({os.path.basename(root): dict_of_files})
-            i += 1
+
+            dict_of_dict_of_files.update({root : dict_of_files})
+
+        dict_of_dict_of_files.update({"base_path": desired_directory})
+        print("base_path: ", dict_of_dict_of_files.get("base_path"))
 
         if request_body.get('from') == 'self':
             return dict_of_dict_of_files
         else:
-            print("returning json\n")
             return json.dumps(dict_of_dict_of_files)
 
     def handle_file(self, request_body):
