@@ -3,6 +3,7 @@ import os
 from security import security
 import json
 import globals
+from sys import getsizeof
 
 
 class ServerRequestHandlerSwitch(object):
@@ -72,8 +73,7 @@ class ServerRequestHandlerSwitch(object):
     def handle_file(self, request_body):
         # Create file path
         client_connection = request_body.get('client_connection')
-        directory = os.path.join("C:\\", "Users", "lette", "PycharmProjects", "Python-Socket-Server-Client",
-                                  request_body.get('directory'))
+        directory = request_body.get('directory')
 
         # If the requested directory doesn't exist, create it.
         if not os.path.exists(directory):
@@ -83,6 +83,7 @@ class ServerRequestHandlerSwitch(object):
         try:
             # Prepare file for writing
             write_to = os.path.join(directory, request_body.get('file_name'))
+            print("write_to", write_to)
             opened_file = open(write_to, 'wb')
 
             body = {
@@ -104,8 +105,11 @@ class ServerRequestHandlerSwitch(object):
                 'response': 'File Saved',
                 'updated_directories': self.get_current_directory_names(request_body={'current_directory': directory,
                                                                                       'from': 'self'})
+            }
+            size_body = {
+                'size': getsizeof(body)
             }        
-
+            client_connection.sendall(json.dumps(size_body).encode('UTF-8'))
             print("Sending to Client: ", body, '\n\n')    
         except IOError:
             body = {

@@ -9,7 +9,9 @@ var program_state = {
 	'base_directory': null,
 	'current_directory': null,
 	'previous_directory': null,
-	'dropped_in_window': null
+	'dropped_in_window': null,
+	'selected_files': {},
+	'recent_selection': null
 }
 
 document.addEventListener("keydown", showPrevDir);
@@ -50,9 +52,49 @@ function create_li_elements(file_body) {
 		//Drag Events
 		li_node.ondragstart = (event) => {
 		   	event.preventDefault();
-		   	event.stopPropagation();
+			event.stopPropagation();
 
-			ipcRenderer.send('ondragstart', remote_directories[event.target.id].file_path);
+			selected_element = path.join(program_state.current_directory, event.target.id);
+			console.log("Event target id: ", event.target.id);
+			console.log("selected_element: ", selected_element);
+			console.log("updated dir: ", remote_directories);			
+			ipcRenderer.send('ondragstart', remote_directories[selected_element].path);
+		}
+
+		/* Still trying to determine how to know which element is closer to the beginning
+		 * When determining when to begin changing the background color to selected.
+		 * 
+		 * WILL NOT WORK AS IT IS WRITTEN
+		 */ 
+		li_node.onclick = (event) => {
+			event.preventDefault();
+			event.stopPropagation();
+			if (event.shiftKey == true) {
+				if (program_state.selected_files.length > 0) {
+					let li_list = document.querySelectorAll('#file-name-list li[id]');
+					let color = false;
+					for (i = 0; i < li_list.length; i++) {
+
+						//Color the <li> element with the appropriate background color
+						if (color == true) {
+							li_list[i].style.backgroundColor = '#4863A0';
+						}
+						else {
+							li_list[i].style.backgroundColor = '#4863A0';
+						}
+
+						if (li_list[i].id == program_state.recent_selection) {
+							color = true;
+						}
+						else if (li_list[id] == event.target.id) {
+							color = false;
+						}
+					}
+				}
+			}
+			program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
+
+			event.currentTarget.style.backgroundColor = '#4863A0';
 		}
 
 		if (directory == true){
@@ -62,8 +104,8 @@ function create_li_elements(file_body) {
 				event.stopPropagation();
 				
 				//Get path of where the file is being moved to
-		    	let drop_dir_name = event.target.id;
-		    	let end_location = remote_directories[drop_dir_name].current_directory;
+		    	let drop_dir_name = path.join(program_state.current_directory, event.target.id);
+		    	let end_location = remote_directories[drop_dir_name].path;
 
 		    	//Get path of files to move
 		    	let files_to_send_path = [];
@@ -167,21 +209,22 @@ function update_file_paths() {
 		//For easy access to file paths later
 		for (file_index in remote_directories[directory].file_names){
 			
-			file = remote_directories[directory].file_names[file_index];
-			let file_path = remote_directories[directory].current_directory + '\\' + file;
+			let file = remote_directories[directory].file_names[file_index];
+			let file_path = path.join(remote_directories[directory].path, file);
 
-			remote_directories[file] = {
-				'file_path': file_path
+			remote_directories[file_path] = {
+				'path': file_path
 			}
 		}
 		//For easy access to parent directories later
-		let sub_directories = remote_directories[directory].sub_directories;
-
-		if (sub_directories.length > 0) {
-			for (i = 0; i < sub_directories.length; i++) {
-				sub_dir_index = path.join(directory, sub_directories[i]);
-				console.log("sub_dir_index: ", sub_dir_index);
-				remote_directories[sub_dir_index].parent_directory = directory;
+		let sub_directory_list = remote_directories[directory].sub_directories;
+		
+		if (sub_directory_list != null) {
+			if (sub_directory_list.length > 0) {
+				for (i = 0; i < sub_directory_list.length; i++) {
+					sub_dir_index = path.join(directory, sub_directory_list[i]);
+					remote_directories[sub_dir_index].parent_directory = directory;
+				}
 			}
 		}
 	}
@@ -190,7 +233,7 @@ function update_file_paths() {
 function droppedInWindow(event) {
 
 	//Get path of where the file is being moved to
-   	let end_location = remote_directories[program_state.base_directory].current_directory;
+   	let end_location = remote_directories[program_state.base_directory].path;
  
    	//Get path of files to move
    	let files_to_send_path = [];
@@ -222,12 +265,21 @@ function draggedLeftWindow(event) {
 	event.currentTarget.style.backgroundColor = '#99badd';
 }
 
+//This function shows the selected directory when the user double clicks
+//the directory in the window.
 function showDirOnEvent(event) {
 	event.preventDefault();
 	event.stopPropagation();
 
-	selected_directory = remote_directories[event.target.id];
-	
+	//Get the abs path of selected Directory
+	let selection_path = path.join(program_state.current_directory, event.target.id);
+	let selected_directory = remote_directories[selection_path];
+
+	if (selected_directory == null){
+		alert("Unable to find selection.")
+		return false;
+	}
+
 	//Remove current <li> elements
 	file_list_ul = document.getElementById("file-name-list");
 
@@ -251,11 +303,13 @@ function showDirOnEvent(event) {
 
 	create_li_elements(file_body);
 
-	program_state.current_directory = event.target.id;
-	program_state.previous_directory = remote_directories[event.target.id].parent_directory;
+	//Update program state
+	program_state.current_directory = selected_directory.path;
+	program_state.previous_directory = remote_directories[selected_directory.path].parent_directory;
 
 }
 
+//This function shows the desired directory when the window loads.
 function showDir() {
 
 	//Remove current <li> elements

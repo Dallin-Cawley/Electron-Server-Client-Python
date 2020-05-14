@@ -69,9 +69,6 @@ class ClientRequestHandlerSwitch(object):
 
             for file_path in file_info.get('files_to_send'):
                 
-                # if i > 0:
-                #    print(json.loads(client_socket.recv(1024).decode('UTF-8')))
-                
                 file_size = os.path.getsize(file_path)
                 
                 file = open(file_path, 'rb')
@@ -87,8 +84,7 @@ class ClientRequestHandlerSwitch(object):
                 }
 
                 client_socket.sendall(json.dumps(body).encode('UTF-8'))
-                recieving_size = json.loads(client_socket.recv(1024).decode('UTF-8'))
-                first_try = json.loads(client_socket.recv(recieving_size.get('size')).decode('UTF-8'))
+                first_try = json.loads(client_socket.recv(1024).decode('UTF-8'))
 
                 # If the server successfully opened where the file is being sent to
                 # send the file.
@@ -100,7 +96,7 @@ class ClientRequestHandlerSwitch(object):
                     status, updated_directories = save_status(client_socket=client_socket)
 
                     if not status:
-                        server_save_status.get('file_save_failure').append(file_path)
+                        server_save_status.get('file_save_failures').append(file_path)
                 else:
                     client_socket.sendall(json.dumps(body).encode('UTF-8'))
                     second_try = json.loads(client_socket.recv(1024).decode('UTF-8'))
@@ -127,7 +123,8 @@ class ClientRequestHandlerSwitch(object):
             pass
 
 def save_status(client_socket):
-    status = json.loads(client_socket.recv(1024).decode('UTF-8'))
+    response_size = json.loads(client_socket.recv(100).decode('UTF-8'))
+    status = json.loads(client_socket.recv(response_size.get('size')).decode('UTF-8'))
 
     if status.get('response') == 'File Saved':
         return True, status.get('updated_directories')
