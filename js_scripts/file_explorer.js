@@ -92,9 +92,21 @@ function create_li_elements(file_body) {
 					}
 				}
 			}
-			program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
+			else if (event.ctrlKey == true) {
+				program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
+				event.currentTarget.style.backgroundColor = '#4863A0';
+			}
+			else {
+				for (i = 0; i < program_state.selected_files.length; i++){
+					let { dir, name, ext } = path.parse(program_state.selected_files[i]);
+					console.log("dir: ", dir);
+					console.log("name: ", name);
+					console.log("ext: ", ext);
+					document.getElementById(name).style.backgroundColor = '#99badd';
+				}
 
-			event.currentTarget.style.backgroundColor = '#4863A0';
+				program_state.selected_files.length = 0;
+			}
 		}
 
 		if (directory == true){

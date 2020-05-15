@@ -79,7 +79,6 @@ let user;
 
   ipcMain.on('ondrop', (event, paths) => {
     console.log("ondrop caught");
-    console.log(JSON.stringify(paths));
 
     options = {
       args: ['send_file', paths]
@@ -87,11 +86,11 @@ let user;
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-      console.log('results', results); 
+      console.log('\nresults: ', results); 
 
       response_body = JSON.parse(results[1]);
-      console.log("response_body: ", response_body)
-      window.webContents.send('update-file-names', response_body)
+      console.log("\n\nresponse_body: ", response_body);
+      window.webContents.send('update-file-names', response_body);
     })
 
   })

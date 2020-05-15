@@ -12,7 +12,6 @@ class ServerRequestHandlerSwitch(object):
             header = header.replace(" ", "_")
 
         method_name = 'handle_' + header
-        print("in handle request")
         handler = getattr(self, method_name, lambda: "Unable to complete Request")
 
         return handler(request_body=request_body)
@@ -83,15 +82,14 @@ class ServerRequestHandlerSwitch(object):
         try:
             # Prepare file for writing
             write_to = os.path.join(directory, request_body.get('file_name'))
-            print("write_to", write_to)
             opened_file = open(write_to, 'wb')
 
-            body = {
+            confirm_body = {
                 'response': 'ready'
             }
             
             # Send a confirmation to Client
-            client_connection.sendall(json.dumps(body).encode('UTF-8'))
+            client_connection.sendall(json.dumps(confirm_body).encode('UTF-8'))
 
             # If opening the desired location was successful,
             # get the bytes of the uploaded file and attempt
@@ -101,23 +99,19 @@ class ServerRequestHandlerSwitch(object):
             opened_file.write(file)
             opened_file.close()
 
-            body = {
+            final_body = {
                 'response': 'File Saved',
                 'updated_directories': self.get_current_directory_names(request_body={'current_directory': directory,
                                                                                       'from': 'self'})
             }
-            size_body = {
-                'size': getsizeof(body)
-            }        
-            client_connection.sendall(json.dumps(size_body).encode('UTF-8'))
-            print("Sending to Client: ", body, '\n\n')    
         except IOError:
-            body = {
+            final_body = {
                 'response': 'Unable to Save File'
             }
 
+
         # Send a confirmation to Client
-        return json.dumps(body)
+        return json.dumps(final_body)
 
     def handle_new_user(self, request_body):
         hashed_password = security.encrypt_password(request_body.get('password'))
