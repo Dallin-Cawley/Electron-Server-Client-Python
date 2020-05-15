@@ -78,7 +78,6 @@ let user;
   })
 
   ipcMain.on('ondrop', (event, paths) => {
-    console.log("ondrop caught");
 
     options = {
       args: ['send_file', paths]
@@ -89,8 +88,24 @@ let user;
       console.log('\nresults: ', results); 
 
       response_body = JSON.parse(results[1]);
-      console.log("\n\nresponse_body: ", response_body);
       window.webContents.send('update-file-names', response_body);
     })
 
+  })
+
+  ipcMain.on('delete-file-dir', (event, delete_list, current_directory) => {
+
+    options = {
+      args:['delete', delete_list, current_directory]
+    }
+
+    PythonShell.run('python_scripts/client.py', options, function(err, results) {     
+      if  (err) throw err;
+      console.log('\nresults: ', results); 
+
+      response_body['updated_directories'] = JSON.parse(results[1]);
+
+      console.log("\nresponse_body: ", response_body, "\n");
+      window.webContents.send('update-file-names', response_body);
+    })
   })

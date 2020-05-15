@@ -9,12 +9,12 @@ var program_state = {
 	'base_directory': null,
 	'current_directory': null,
 	'previous_directory': null,
-	'dropped_in_window': null,
-	'selected_files': {},
+	'show_dir': null,
+	'selected_files': [],
 	'recent_selection': null
 }
 
-document.addEventListener("keydown", showPrevDir);
+document.addEventListener("keydown", handleKeyDown);
 
 function get_file_names() {
     ipcRenderer.send('get-file-names')
@@ -97,15 +97,21 @@ function create_li_elements(file_body) {
 				event.currentTarget.style.backgroundColor = '#4863A0';
 			}
 			else {
+
+				//Set currently selected items back to default background color
 				for (i = 0; i < program_state.selected_files.length; i++){
 					let { dir, name, ext } = path.parse(program_state.selected_files[i]);
-					console.log("dir: ", dir);
-					console.log("name: ", name);
-					console.log("ext: ", ext);
-					document.getElementById(name).style.backgroundColor = '#99badd';
+					console.log("id: ", name + ext);
+					document.getElementById(name + ext).parentElement.style.backgroundColor = '#99badd';
 				}
 
+				//Clear selected files so only one can be selected at a time unless shift or control
+				//is clicked.
 				program_state.selected_files.length = 0;
+
+				//set selected item's background color.
+				event.currentTarget.style.backgroundColor = '#4863A0';
+				program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
 			}
 		}
 
@@ -199,9 +205,9 @@ ipcRenderer.on('update-file-names', function(event, response_body) {
 		remote_directories[dir_key] = updated_directories[dir_key];
 	}
 
-	if (program_state.dropped_in_window == true){
+	if (program_state.show_dir == true){
 		showDir();
-		program_state.dropped_in_window = false;
+		program_state.show_dir = false;
 	}
 
 })
@@ -262,7 +268,7 @@ function droppedInWindow(event) {
    		'files_to_send': files_to_send_path
 	   }
 	   
-	program_state.dropped_in_window = true;
+	program_state.show_dir = true;
 	event.currentTarget.style.backgroundColor = '#99badd';
    	ipcRenderer.send('ondrop', JSON.stringify(drop_body));
 }
@@ -349,44 +355,55 @@ function showDir() {
 	create_li_elements(file_body);
 }
 
+function handleKeyDown(event) {
+	var key = event.keyCode || event.charCode;
+	
+	if (key == 8) {
+		showPrevDir(event);
+	}
+	else if (key == 46) {
+		deleteFileDir(event);
+	}
+}
+
+function deleteFileDir(event){
+	program_state.show_dir = true;
+	ipcRenderer.send('delete-file-dir', JSON.stringify(program_state.selected_files), program_state.current_directory);
+}
+
 function showPrevDir(event) {
 
-    var key = event.keyCode || event.charCode;
-	
-	//Key 8 is 'backspace'
-    if( key == 8) {
-		//If we are as far back as is allowed, don't do anything
-    	if (program_state.current_directory == program_state.base_directory) {
-    		return false;
-    	}
-    	
-		selected_directory = remote_directories[program_state.previous_directory];
-		
-		//Remove current <li> elements
-		file_list_ul = document.getElementById("file-name-list");
-
-		while(file_list_ul.firstChild) {
-			file_list_ul.removeChild(file_list_ul.lastChild);
-		}
-
-		//Create Directories as <li>
-		file_body = {
-			'directory': true,
-			'to_display': selected_directory.sub_directories,
-			'image': 'images/file_folder.png'
-		}
-
-		create_li_elements(file_body);
-
-		//Create Files as <li>
-		file_body['directory'] = false;
-		file_body['to_display'] = selected_directory.file_names;
-		file_body['image'] = 'images/txt-file-icon.png'
-
-		create_li_elements(file_body);
-
-		program_state.current_directory = program_state.previous_directory;
-		program_state.previous_directory = remote_directories[program_state.current_directory].parent_directory;
-
+	//If we are as far back as is allowed, don't do anything
+    if (program_state.current_directory == program_state.base_directory) {
+    	return false;
     }
+    	
+	selected_directory = remote_directories[program_state.previous_directory];
+		
+	//Remove current <li> elements
+	file_list_ul = document.getElementById("file-name-list");
+
+	while(file_list_ul.firstChild) {
+		file_list_ul.removeChild(file_list_ul.lastChild);
+	}
+
+	//Create Directories as <li>
+	file_body = {
+		'directory': true,
+		'to_display': selected_directory.sub_directories,
+		'image': 'images/file_folder.png'
+	}
+
+	create_li_elements(file_body);
+
+	//Create Files as <li>
+	file_body['directory'] = false;
+	file_body['to_display'] = selected_directory.file_names;
+	file_body['image'] = 'images/txt-file-icon.png'
+
+	create_li_elements(file_body);
+
+	program_state.current_directory = program_state.previous_directory;
+	program_state.previous_directory = remote_directories[program_state.current_directory].parent_directory;
+
 };

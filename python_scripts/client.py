@@ -34,7 +34,6 @@ def main():
     # The Server sends a final 'Connection Terminating' message after recieving
     # a message with 'header' = 'quit'
     client_socket.sendall(json.dumps(quit).encode('UTF-8'))
-    print("Before connection should terminate. \n")
     print(json.dumps(client_socket.recv(1024).decode('UTF-8')), flush=True)
 
     client_socket.close()

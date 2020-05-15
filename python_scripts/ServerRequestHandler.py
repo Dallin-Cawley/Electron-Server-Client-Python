@@ -4,6 +4,7 @@ from security import security
 import json
 import globals
 from sys import getsizeof
+from shutil import rmtree
 
 
 class ServerRequestHandlerSwitch(object):
@@ -36,6 +37,22 @@ class ServerRequestHandlerSwitch(object):
 
         return json.dumps(body)
 
+    def handle_delete(self, request_body):
+        deleting_items = request_body.get('to_delete')
+
+        for item in deleting_items:
+            if os.path.isfile(item):
+                os.remove(item)
+            else:
+                rmtree(item)
+
+        request_body.update({'from': 'self'})
+        updated_directories = self.get_current_directory_names(request_body=request_body)
+
+
+        return json.dumps(updated_directories)
+
+
     def handle_ls(self, request_body):
         return self.get_current_directory_names(request_body=request_body)
 
@@ -62,7 +79,6 @@ class ServerRequestHandlerSwitch(object):
             dict_of_dict_of_files.update({root : dict_of_files})
 
         dict_of_dict_of_files.update({"base_path": desired_directory})
-        print("base_path: ", dict_of_dict_of_files.get("base_path"))
 
         if request_body.get('from') == 'self':
             return dict_of_dict_of_files
