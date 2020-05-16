@@ -12,7 +12,7 @@ def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to a port for use
-    server_socket.bind(('0.0.0.0', 8001))
+    server_socket.bind(('localhost', 8001))
 
     # Listen for a connection
     server_socket.listen()

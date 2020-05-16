@@ -70,11 +70,14 @@ let user;
     })
   })
 
-  ipcMain.on('ondragstart', (event, filePath) => {
+  ipcMain.on('ondragstart', (event, file_paths) => {
+    
+    //file_paths is an array
     event.sender.startDrag({
-      file: filePath,
+      files: file_paths,
       icon: 'images/file_folder.png'
     })
+
   })
 
   ipcMain.on('ondrop', (event, paths) => {

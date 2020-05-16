@@ -35,6 +35,7 @@ function create_li_elements(file_body) {
 		//Create <li> element
 		let li_node = document.createElement("LI");
 		let text = document.createTextNode(file_list[file_index]);
+		li_node.id = file_list[file_index];
 		
 		//Create and adjust image
 		let image = document.createElement("IMG");
@@ -53,12 +54,10 @@ function create_li_elements(file_body) {
 		li_node.ondragstart = (event) => {
 		   	event.preventDefault();
 			event.stopPropagation();
-
-			selected_element = path.join(program_state.current_directory, event.target.id);
-			console.log("Event target id: ", event.target.id);
-			console.log("selected_element: ", selected_element);
-			console.log("updated dir: ", remote_directories);			
-			ipcRenderer.send('ondragstart', remote_directories[selected_element].path);
+			
+			if (program_state.selected_files.length > 0) {
+				ipcRenderer.send('ondragstart', program_state.selected_files);
+			}
 		}
 
 		/* Still trying to determine how to know which element is closer to the beginning
@@ -67,52 +66,7 @@ function create_li_elements(file_body) {
 		 * WILL NOT WORK AS IT IS WRITTEN
 		 */ 
 		li_node.onclick = (event) => {
-			event.preventDefault();
-			event.stopPropagation();
-			if (event.shiftKey == true) {
-				if (program_state.selected_files.length > 0) {
-					let li_list = document.querySelectorAll('#file-name-list li[id]');
-					let color = false;
-					for (i = 0; i < li_list.length; i++) {
-
-						//Color the <li> element with the appropriate background color
-						if (color == true) {
-							li_list[i].style.backgroundColor = '#4863A0';
-						}
-						else {
-							li_list[i].style.backgroundColor = '#4863A0';
-						}
-
-						if (li_list[i].id == program_state.recent_selection) {
-							color = true;
-						}
-						else if (li_list[id] == event.target.id) {
-							color = false;
-						}
-					}
-				}
-			}
-			else if (event.ctrlKey == true) {
-				program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
-				event.currentTarget.style.backgroundColor = '#4863A0';
-			}
-			else {
-
-				//Set currently selected items back to default background color
-				for (i = 0; i < program_state.selected_files.length; i++){
-					let { dir, name, ext } = path.parse(program_state.selected_files[i]);
-					console.log("id: ", name + ext);
-					document.getElementById(name + ext).parentElement.style.backgroundColor = '#99badd';
-				}
-
-				//Clear selected files so only one can be selected at a time unless shift or control
-				//is clicked.
-				program_state.selected_files.length = 0;
-
-				//set selected item's background color.
-				event.currentTarget.style.backgroundColor = '#4863A0';
-				program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
-			}
+			liOnClick(event);
 		}
 
 		if (directory == true){
@@ -247,6 +201,90 @@ function update_file_paths() {
 		}
 	}
 }
+
+function liOnClick(event) {
+	event.preventDefault();
+	event.stopPropagation();
+	if (event.shiftKey == true) {
+
+		if (program_state.selected_files.length > 0) {
+
+			let ul = document.getElementById('file-name-list');
+			let li_list = ul.getElementsByTagName('li');
+
+			let first = false;
+			for (i = 0; i < li_list.length; i++) {
+				if (first == true && (program_state.recent_selection == li_list[i].id || event.target.id == li_list[i])) {
+					first = false;
+				}
+				else if ((program_state.recent_selection == li_list[i].id || event.target.id == li_list[i]) && first == false) {
+					first = true;
+				}
+
+				if (first == true) {
+					li_list[i].style.backgroundColor = '#4863A0'
+					program_state.selected_files.push(path.join(program_state.current_directory, li_list[i].id));
+				}
+				else {
+					li_list[i].style.backgroundColor = '#99badd';
+				}
+			}
+		}
+		else {
+
+			//Set currently selected items back to default background color
+			for (i = 0; i < program_state.selected_files.length; i++){
+				let { dir, name, ext } = path.parse(program_state.selected_files[i]);
+				document.getElementById(name + ext).style.backgroundColor = '#99badd';
+			}
+
+			//Clear selected files so only one can be selected at a time unless shift or control
+			//is clicked.
+			program_state.selected_files.length = 0;
+
+			//set selected item's background color.
+			event.currentTarget.style.backgroundColor = '#4863A0';
+			program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
+			program_state.recent_selection = event.target.id;
+			
+		}
+
+	}
+	else if (event.ctrlKey == true) {
+		program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
+		event.currentTarget.style.backgroundColor = '#4863A0';
+		program_state.recent_selection = event.target.id;
+	}
+	else {
+
+		//Set currently selected items back to default background color
+		for (i = 0; i < program_state.selected_files.length; i++){
+			let { dir, name, ext } = path.parse(program_state.selected_files[i]);
+			document.getElementById(name + ext).style.backgroundColor = '#99badd';
+		}
+
+		//Clear selected files so only one can be selected at a time unless shift or control
+		//is clicked.
+		program_state.selected_files.length = 0;
+
+		//set selected item's background color.
+		event.currentTarget.style.backgroundColor = '#4863A0';
+		program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
+		program_state.recent_selection = event.target.id;
+	}
+}
+
+//Removes all selections
+function fileWindowClick(event) {
+	//Set currently selected items back to default background color
+	for (i = 0; i < program_state.selected_files.length; i++){
+		let { dir, name, ext } = path.parse(program_state.selected_files[i]);
+		document.getElementById(name + ext).style.backgroundColor = '#99badd';
+	}
+	program_state.selected_files.length = 0;
+	program_state.recent_selection = null;
+}
+
 
 function droppedInWindow(event) {
 
