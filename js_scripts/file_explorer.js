@@ -11,7 +11,7 @@ var program_state = {
 	'previous_directory': null,
 	'show_dir': null,
 	'selected_files': [],
-	'recent_selection': null
+	'recent_selection': null,
 }
 
 document.addEventListener("keydown", handleKeyDown);
@@ -276,11 +276,13 @@ function liOnClick(event) {
 
 //Removes all selections
 function fileWindowClick(event) {
+
 	//Set currently selected items back to default background color
 	for (i = 0; i < program_state.selected_files.length; i++){
 		let { dir, name, ext } = path.parse(program_state.selected_files[i]);
 		document.getElementById(name + ext).style.backgroundColor = '#99badd';
 	}
+
 	program_state.selected_files.length = 0;
 	program_state.recent_selection = null;
 }
@@ -292,18 +294,28 @@ function droppedInWindow(event) {
    	let end_location = remote_directories[program_state.base_directory].path;
  
    	//Get path of files to move
-   	let files_to_send_path = [];
+	let files_to_send_path = [];
+	let directories_to_send_path = [];   
    	let event_files_length = event.dataTransfer.files.length;
-   	let event_files = event.dataTransfer.files;
+	let event_files = event.dataTransfer.files;
 
    	for (let i = 0; i < event_files_length; i++){
-   		files_to_send_path.push(event_files[i].path);
+		let { dir, name, ext } = path.parse(event_files[i].path)
+		//Dropped item is a directory
+		if (ext == '') {
+			directories_to_send_path.push(event_files[i].path)
+		}
+		else {
+			files_to_send_path.push(event_files[i].path);
+		}
    	}
 
    	//Create and send necessary information for client.py
    	drop_body = {
    		'sending_to': end_location,
-   		'files_to_send': files_to_send_path
+		'files_to_send': files_to_send_path,
+		'directories_to_send': directories_to_send_path,
+		'base_path': program_state.base_directory
 	   }
 	   
 	program_state.show_dir = true;

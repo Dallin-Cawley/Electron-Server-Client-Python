@@ -88,8 +88,7 @@ let user;
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-      console.log('\nresults: ', results); 
-
+      console.log("\nResponse: ", results, "\n")
       response_body = JSON.parse(results[1]);
       window.webContents.send('update-file-names', response_body);
     })
