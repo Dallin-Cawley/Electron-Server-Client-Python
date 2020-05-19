@@ -86,18 +86,25 @@ class ClientRequestHandlerSwitch(object):
 
             directories = file_info.get('directories_to_send')
             files = file_info.get('files_to_send')
+            print("Files: ", files, "\n")
             directory_info = {}
+            i = 0
             if len(directories) > 0:
                 for dir in directories:
                     dir_files = os.walk(dir)
 
                     for root, dir_list, file_list in dir_files:
+
                         dir_of_files = {
                             'sub_directories': dir_list,
                             'files': file_list,
-                            'name': os.path.basename(dir)
+                            'path': root,
                         }
-                        directory_info.update({dir: dir_of_files})
+                        
+                        for i in range(0, len(file_list)):
+                            files.push(os.path.join(root, file_list[i]))
+
+                        directory_info.update({root: dir_of_files})
 
             # Creates all directories remotely before attempting to
             # write files to them.
@@ -106,15 +113,16 @@ class ClientRequestHandlerSwitch(object):
             }
             size_body = {
                 'header': 'directory',
-                'size': getsizeof(body),
+                'size': len(json.dumps(body).encode('UTF-8')),
                 'base_path': file_info.get('base_path')
             }
-            client_socket.sendall(json.dumps(size_body).encode('UTF-8'))
+            client_socket.sendall(json.dumps(size_body).encode('UTF-8'))            
             client_socket.sendall(json.dumps(body).encode('UTF-8'))
 
             response_size = json.loads(client_socket.recv(100).decode('UTF-8'))
             response = json.loads(client_socket.recv(response_size.get('size')).decode('UTF-8'))
             
+            print("File Response: ", response, "\n")
             # If the server successfully created all directories
             if response.get('response') == 'success':
 
@@ -130,7 +138,8 @@ class ClientRequestHandlerSwitch(object):
                     body = {
                         'header': 'file',
                         'file_size': file_size,
-                        'path': file,                   
+                        'path': file,  
+                        'current_directory': ''            
                     }
 
                     client_socket.sendall(json.dumps(body).encode('UTF-8'))

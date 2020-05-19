@@ -37,39 +37,38 @@ class ServerRequestHandlerSwitch(object):
 
         return json.dumps(body)
 
+    def recursive_dir_copy(self, directories, current_dir, server_parent_path, client_base_path):
+
+        sub_directories = current_dir.get('sub_directories')
+        
+        for sub_dir in sub_directories:
+            dict_path = os.path.join(client_base_path, sub_dir)
+            child_path = os.path.join(server_parent_path, sub_dir)
+
+            if not os.path.exists(child_path):
+                os.mkdir(child_path)
+            
+            if len(directories.get(dict_path).get('sub_directories')) > 0:
+                self.recursive_dir_copy(directories, directories.get(dict_path), child_path, dict_path)
+
+        return
+
     def handle_directory(self, request_body):
-        user_directory = request_body.get('base_path') 
+        server_base_path = request_body.get('base_path') 
         client_socket = request_body.get('client_connection')
 
         directories = json.loads(client_socket.recv(request_body.get('size')).decode('UTF-8')).get('directories')
-        print("Directories: ", directories, "\n")
-        i = 1
+
+
         for dir in directories:
-            print("Dir: ", dir, "\n")
-            directory = directories.get(dir)
-            print("\nDirectory: ", directory, "\n")
+            path = os.path.join(server_base_path, os.path.basename(dir))
 
-            if i == 1:
-                dir_name = os.path.basename(directory.get('name'))
-                directory.update({'path_from_base': dir_name})
-                move_to = os.path.join(user_directory, dir_name)
+            if not os.path.exists(path):
+                os.mkdir(path)
 
-                # If the requested directory doesn't exist, create it.
-                if not os.path.exists(move_to):
-                    print("path does not exist")
-                    os.mkdir(move_to)
-                i += 1
-
-            for sub_dir in directory.get('sub_directories'):
-
-                sub_dir_info = directories.get(sub_dir)
-                sub_dir_info.update({'path_from_base': os.path.join(directory.get('path_from_base'), sub_dir_info.get('name'))})
-
-                move_to = os.path.join(user_directory, sub_dir_info.get('path_from_base'))
-                
-                if not os.path.exists(move_to):
-                    print(sub_dir, "Does not exist")
-                    os.mkdir(move_to)
+            self.recursive_dir_copy(directories=directories, current_dir=directories.get(dir), server_parent_path=path, client_base_path=dir)
+            break
+       
 
         return json.dumps({'response': 'success'})
 
@@ -130,6 +129,7 @@ class ServerRequestHandlerSwitch(object):
         # Write the file to specified location
         try:
             # Prepare file for writing
+            directory = request_body.get('current_directory')
             write_to = request_body.get('path')
             opened_file = open(write_to, 'wb')
 

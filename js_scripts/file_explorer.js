@@ -60,11 +60,6 @@ function create_li_elements(file_body) {
 			}
 		}
 
-		/* Still trying to determine how to know which element is closer to the beginning
-		 * When determining when to begin changing the background color to selected.
-		 * 
-		 * WILL NOT WORK AS IT IS WRITTEN
-		 */ 
 		li_node.onclick = (event) => {
 			liOnClick(event);
 		}
