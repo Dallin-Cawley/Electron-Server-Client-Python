@@ -70,119 +70,122 @@ class ClientRequestHandlerSwitch(object):
 
         return json.loads(current_directory_list)
 
+
+    def recursive_get_dir_names(self, directory_path, directory_sub_path):
+        list_dir_names = []
+        dict_file_names = {}
+
+        list_dir_names.append(directory_sub_path)
+        directory_walked = os.walk(directory_path)
+
+        for root, sub_directories, files in directory_walked:
+            for file in files:
+                dict_file_names.update({os.path.join(directory_sub_path, file): {
+                        'file_sub_path': os.path.join(directory_sub_path, file),
+                        'file_full_path': os.path.join(root, file)
+                    }
+                })
+
+            # This for loop only iterates once because the recursion will take care of the rest
+            # of the sub directories in the list returned by os.walk().     
+            for sub_dir in sub_directories:
+                sub_dir_path = os.path.join(directory_path, sub_dir)
+                sub_dir_sub_path = os.path.join(directory_sub_path, sub_dir)
+
+                r_dir_names, r_file_names = self.recursive_get_dir_names(sub_dir_path, sub_dir_sub_path)
+                list_dir_names = list_dir_names + r_dir_names
+                dict_file_names.update(r_file_names)
+            break
+
+        return list_dir_names, dict_file_names
+
+
     def handle_send_file(self, function_call_body):
+        dropped_items = json.loads(function_call_body.get(2))
         client_socket = function_call_body.get('client_socket')
 
-        # The second argument in the function_call_body for sending a file
-        # is a stringified object that needs to be reloaded.
-        file_info = json.loads(function_call_body.get(2))
+        # List of File objects
+        directories = dropped_items.get('directories')
 
-        try:
+        files = dropped_items.get('files')
+        current_directory = dropped_items.get('current_directory')
 
-            server_save_status = {
-                'updated_directories': '',
-                'file_save_failures': []
-            }
-
-            directories = file_info.get('directories_to_send')
-            files = file_info.get('files_to_send')
-            print("Files: ", files, "\n")
-            directory_info = {}
-            i = 0
-            if len(directories) > 0:
-                for dir in directories:
-                    dir_files = os.walk(dir)
-
-                    for root, dir_list, file_list in dir_files:
-
-                        dir_of_files = {
-                            'sub_directories': dir_list,
-                            'files': file_list,
-                            'path': root,
-                        }
-                        
-                        for i in range(0, len(file_list)):
-                            files.push(os.path.join(root, file_list[i]))
-
-                        directory_info.update({root: dir_of_files})
-
-            # Creates all directories remotely before attempting to
-            # write files to them.
-            body = {
-                'directories': directory_info,
-            }
-            size_body = {
-                'header': 'directory',
-                'size': len(json.dumps(body).encode('UTF-8')),
-                'base_path': file_info.get('base_path')
-            }
-            client_socket.sendall(json.dumps(size_body).encode('UTF-8'))            
-            client_socket.sendall(json.dumps(body).encode('UTF-8'))
-
-            response_size = json.loads(client_socket.recv(100).decode('UTF-8'))
-            response = json.loads(client_socket.recv(response_size.get('size')).decode('UTF-8'))
+        list_dir_names = []
+        dict_file_names = {}
+        for i in range(0, len(directories)):
+            r_dir_names, r_file_names = self.recursive_get_dir_names(directories[i].get('path'), directories[i].get('name'))
+            list_dir_names.append(r_dir_names)
+            dict_file_names.update(r_file_names)
             
-            print("File Response: ", response, "\n")
-            # If the server successfully created all directories
-            if response.get('response') == 'success':
+        directory_body = {
+            'header': 'directory',
+            'directories': list_dir_names,
+            'files': dict_file_names,
+            'current_directory': current_directory
+        }
+        # Send Directory names for creation
+        client_socket.sendall(json.dumps(directory_body).encode('UTF-8'))
 
-                # Send all files
-                for file in files:
-                    
-                    file_size = os.path.getsize(file)
-                    
-                    file = open(file, 'rb')
-                    file_bytes = file.read(file_size)
-                    file.close()
 
-                    body = {
-                        'header': 'file',
-                        'file_size': file_size,
-                        'path': file,  
-                        'current_directory': ''            
-                    }
 
-                    client_socket.sendall(json.dumps(body).encode('UTF-8'))
-                    first_try = json.loads(client_socket.recv(1024).decode('UTF-8'))
+        # Send Directory Files
+        while True:
+            try:
+                # Recieve file request
+                response = json.loads(client_socket.recv(1024).decode('UTF-8'))
+                file_name = response.get('file')
+                if file_name == 'done':
+                    break
 
-                    # If the server successfully opened where the file is being sent to
-                    # send the file.
-                    #
-                    # Else, try again. If that fails, the file was unable to be saved
-                    updated_directories = ''
-                    if first_try.get('response') == 'ready':
-                        client_socket.sendall(file_bytes)
-                        status, updated_directories = save_status(client_socket=client_socket)
+                opened_file = open(file_name, 'rb')
 
-                        if not status:
-                            server_save_status.get('file_save_failures').append(file)
-                    else:
-                        client_socket.sendall(json.dumps(body).encode('UTF-8'))
-                        second_try = json.loads(client_socket.recv(1024).decode('UTF-8'))
-                        
-                        if second_try.get('response') == 'ready':
-                            client_socket.sendall(file_bytes)
+                # Send the size of file
+                size_body = {
+                    'size': os.stat(response.get('file')).st_size
+                }
+                client_socket.sendall(json.dumps(size_body).encode('UTF-8'))
 
-                        status, updated_directories = save_status(client_socket=client_socket)
-                        
-                        if not status:
-                            server_save_status.get('file_save_failure').append(file)
-                        # else:
-                            # print(second_try.get('response'))
+                # Send file bytes
+                client_socket.sendall(opened_file.read())
+                opened_file.close()
+            except:
+                print("Unable to save file", response.get('file'))
+                return response
 
-                    # Get the server's directory information to maintain client accuracy
-                    server_save_status.update({'updated_directories': updated_directories})
 
-            return server_save_status
-        except FileNotFoundError:
-            print('File not found. Try again.')
-            pass
 
-def save_status(client_socket):
-    response_size = json.loads(client_socket.recv(2000).decode('UTF-8'))
-    status = json.loads(client_socket.recv(response_size.get('size')).decode('UTF-8'))
+        size = json.loads(client_socket.recv(100).decode('UTF-8'))
+        response = json.loads(client_socket.recv(size.get('size')).decode('UTF-8'))
 
-    if status.get('response') == 'File Saved':
-        return True, status.get('updated_directories')
-    else:
-        return False, status.get('updated_directories')   
+
+
+        # Send all files
+        for file_obj in files:
+            file = file_obj
+
+            file_name = {
+                'header': 'file',
+                'name': file.get('name'),
+                'size': file.get('size'),
+                'current_directory': current_directory
+            }
+
+            client_socket.sendall(json.dumps(file_name).encode('UTF-8'))
+            status = json.loads(client_socket.recv(100).decode('UTF-8'))
+
+            if status.get('status') == 'ready':
+                opened_file = open(file.get('path'), 'rb')
+
+                client_socket.sendall(opened_file.read())
+
+                response_size = json.loads(client_socket.recv(100).decode('UTF-8'))
+                response = json.loads(client_socket.recv(response_size.get('size')).decode('UTF-8'))
+
+            else:
+                print("Server was unable to open", file.get('name'))
+        
+        return response
+
+
+
+        

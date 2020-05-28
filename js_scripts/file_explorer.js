@@ -6,12 +6,12 @@ window.onload = get_file_names();
 var remote_directories;
 
 var program_state = {
-	'base_directory': null,
 	'current_directory': null,
 	'previous_directory': null,
 	'show_dir': null,
 	'selected_files': [],
 	'recent_selection': null,
+	'user': null
 }
 
 document.addEventListener("keydown", handleKeyDown);
@@ -119,20 +119,20 @@ function create_li_elements(file_body) {
 
 //file-names is thrown after a successful login to localize and display
 //directory and file names.
-ipcRenderer.on('file-names', function(event, directory_info){
+ipcRenderer.on('file-names', function(event, directory_info, user){
 
-	//Localize these variables for future use
-	program_state.base_directory = directory_info.base_path;
+	//Localize these variables for future use;
 	remote_directories = directory_info;
-	program_state.current_directory = program_state.base_directory;
+	program_state.user = user;
+	program_state.current_directory = user
 
 	update_file_paths()
 	//console.log("remote directories: ", remote_directories);
 	//Create Directories as <li>
-	console.log("base_directory: ", program_state.base_directory);
+
 	file_body = {
 		'directory': true,
-		'to_display': directory_info[program_state.base_directory].sub_directories,
+		'to_display': directory_info[program_state.user].sub_directories,
 		'image': 'images/file_folder.png'
 	}
 
@@ -140,17 +140,31 @@ ipcRenderer.on('file-names', function(event, directory_info){
 
 	//Create Files as <li>
 	file_body['directory'] = false;
-	file_body['to_display'] = directory_info[program_state.base_directory].file_names;
+	file_body['to_display'] = directory_info[program_state.user].file_names;
 	file_body['image'] = 'images/txt-file-icon.png'
 
 	create_li_elements(file_body);
 })
 
+
 ipcRenderer.on('update-file-names', function(event, response_body) {
+	console.log("Response body:", response_body);
 	updated_directories = response_body["updated_directories"];
 
+	if (typeof updated_directories == 'string') {
+		updated_directories = JSON.parse(updated_directories)
+	}
+
+
 	for (dir_key in updated_directories) {
-		updated_directories[dir_key]["parent_directory"] = remote_directories[dir_key].parent_directory;
+		if (dir_key != program_state.user) {
+			parent_path = dir_key.replace(path.basename(dir_key), '');
+			parent_path = parent_path.slice(0, -1);
+		}
+		else {
+			parent_path = program_state.user;
+		}
+		updated_directories[dir_key]["parent_directory"] = parent_path;
 		remote_directories[dir_key] = updated_directories[dir_key];
 	}
 
@@ -275,7 +289,13 @@ function fileWindowClick(event) {
 	//Set currently selected items back to default background color
 	for (i = 0; i < program_state.selected_files.length; i++){
 		let { dir, name, ext } = path.parse(program_state.selected_files[i]);
-		document.getElementById(name + ext).style.backgroundColor = '#99badd';
+
+		if (ext != '') {
+			document.getElementById(name + ext).style.backgroundColor = '#99badd';
+		}
+		else {
+			document.getElementById(name).style.backgroundColor = '#99badd';
+		}
 	}
 
 	program_state.selected_files.length = 0;
@@ -284,38 +304,49 @@ function fileWindowClick(event) {
 
 
 function droppedInWindow(event) {
+	//Get a list of all items dropped into window
+	dropped_items = event.dataTransfer.files
 
-	//Get path of where the file is being moved to
-   	let end_location = remote_directories[program_state.base_directory].path;
- 
-   	//Get path of files to move
-	let files_to_send_path = [];
-	let directories_to_send_path = [];   
-   	let event_files_length = event.dataTransfer.files.length;
-	let event_files = event.dataTransfer.files;
+	//Used to hold directory and file names seperately
+	directories = [];
+	files = [];
 
-   	for (let i = 0; i < event_files_length; i++){
-		let { dir, name, ext } = path.parse(event_files[i].path)
-		//Dropped item is a directory
-		if (ext == '') {
-			directories_to_send_path.push(event_files[i].path)
+	//Check to see which are files and which are directories
+	for (i = 0; i < dropped_items.length; i++) {
+		item = dropped_items[i];
+		
+		if (item.type == '') {  //Item is a directory
+
+			directory_info = {
+				'name': item.name,
+				'path': item.path,
+				'size': item.size,
+			}
+		   directories.push(directory_info)
 		}
-		else {
-			files_to_send_path.push(event_files[i].path);
-		}
-   	}
+		else {   //Item is a file
 
-   	//Create and send necessary information for client.py
-   	drop_body = {
-   		'sending_to': end_location,
-		'files_to_send': files_to_send_path,
-		'directories_to_send': directories_to_send_path,
-		'base_path': program_state.base_directory
-	   }
+			file_info = {
+				'name': item.name,
+				'path': item.path,
+				'size': item.size,
+				'type': item.type
+			}
+			files.push(file_info)
+		}
+	}
+
+	dropped_items = {
+		'files': files,
+		'directories': directories,
+		'current_directory': program_state.current_directory
+	}
+
+	console.log("Dropped Items", dropped_items)
 	   
 	program_state.show_dir = true;
 	event.currentTarget.style.backgroundColor = '#99badd';
-   	ipcRenderer.send('ondrop', JSON.stringify(drop_body));
+   	ipcRenderer.send('ondrop', JSON.stringify(dropped_items));
 }
 
 function draggedOverWindow(event) {
@@ -367,8 +398,10 @@ function showDirOnEvent(event) {
 	create_li_elements(file_body);
 
 	//Update program state
-	program_state.current_directory = selected_directory.path;
-	program_state.previous_directory = remote_directories[selected_directory.path].parent_directory;
+	program_state.current_directory = selection_path;
+	program_state.previous_directory = remote_directories[selection_path].parent_directory;
+	program_state.selected_files.length = 0;
+	program_state.recent_selection = null;
 
 }
 
@@ -398,6 +431,10 @@ function showDir() {
 	file_body['image'] = 'images/txt-file-icon.png'
 
 	create_li_elements(file_body);
+
+	//Update program state
+	program_state.selected_files.length = 0;
+	program_state.recent_selection = null;
 }
 
 function handleKeyDown(event) {
@@ -419,7 +456,7 @@ function deleteFileDir(event){
 function showPrevDir(event) {
 
 	//If we are as far back as is allowed, don't do anything
-    if (program_state.current_directory == program_state.base_directory) {
+    if (program_state.current_directory == program_state.user) {
     	return false;
     }
     	
@@ -448,7 +485,10 @@ function showPrevDir(event) {
 
 	create_li_elements(file_body);
 
+	//Update program state
 	program_state.current_directory = program_state.previous_directory;
 	program_state.previous_directory = remote_directories[program_state.current_directory].parent_directory;
+	program_state.selected_files.length = 0;
+	program_state.recent_selection = null;
 
 };

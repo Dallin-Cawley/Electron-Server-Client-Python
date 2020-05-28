@@ -66,7 +66,7 @@ let user;
       response_body["user"] = user;
       console.log("base_path: ", response_body["base_path"]);
 
-      window.webContents.send('file-names', response_body);
+      window.webContents.send('file-names', response_body, user);
     })
   })
 
@@ -80,16 +80,17 @@ let user;
 
   })
 
-  ipcMain.on('ondrop', (event, paths) => {
+  ipcMain.on('ondrop', (event, dropped_items) => {
 
     options = {
-      args: ['send_file', paths]
+      args: ['send_file', dropped_items]
     }
+    console.log("Dropped items: ", dropped_items, "\n");
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-      console.log("\nResponse: ", results, "\n")
-      response_body = JSON.parse(results[1]);
+      console.log('\n\nResults: ', results, '\n')
+      response_body['updated_directories'] = JSON.parse(results[1]);
       window.webContents.send('update-file-names', response_body);
     })
 

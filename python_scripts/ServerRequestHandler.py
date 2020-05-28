@@ -5,6 +5,7 @@ import json
 import globals
 from sys import getsizeof
 from shutil import rmtree
+from pathlib import Path
 
 
 class ServerRequestHandlerSwitch(object):
@@ -37,64 +38,77 @@ class ServerRequestHandlerSwitch(object):
 
         return json.dumps(body)
 
-    def recursive_dir_copy(self, directories, current_dir, server_parent_path, client_base_path):
-
-        sub_directories = current_dir.get('sub_directories')
-        
-        for sub_dir in sub_directories:
-            dict_path = os.path.join(client_base_path, sub_dir)
-            child_path = os.path.join(server_parent_path, sub_dir)
-
-            if not os.path.exists(child_path):
-                os.mkdir(child_path)
-            
-            if len(directories.get(dict_path).get('sub_directories')) > 0:
-                self.recursive_dir_copy(directories, directories.get(dict_path), child_path, dict_path)
-
-        return
 
     def handle_directory(self, request_body):
-        server_base_path = request_body.get('base_path') 
-        client_socket = request_body.get('client_connection')
+        client_connection = request_body.get('client_connection')
+        directories = request_body.get('directories')
+        files = request_body.get('files')
+        paste_dir = request_body.get('current_directory')
+        base_dir = os.path.join(request_body.get('base_dir'), paste_dir)
 
-        directories = json.loads(client_socket.recv(request_body.get('size')).decode('UTF-8')).get('directories')
+        # Create Directories if they don't already exist from sent list of directories
+        try:
+            for dir_list in directories:
+                for dir in dir_list:
+                    print("dir:", dir)
+                    full_path = Path(base_dir, dir)
+
+                    if not os.path.exists(full_path):
+                        os.mkdir(full_path)
+        except:
+            print("There was an error creating directory")
+
+        # Get files and save them to this machine
+        try:
+            for file_key in files:
+                file_info = files.get(file_key)
+
+                # Ask client for next file in list
+                file_request = {
+                    'file': file_info.get('file_full_path')
+                }
+                client_connection.sendall(json.dumps(file_request).encode('UTF-8'))
+
+                # Recieve the file bytes and write them
+                file_size = json.loads(client_connection.recv(100).decode('UTF-8'))
+                file_bytes = client_connection.recv(file_size.get('size'))
+
+                file = open(Path(request_body.get('base_dir'), request_body.get('current_directory'), file_info.get('file_sub_path')), 'wb')
+                file.write(file_bytes)
+                file.close()
+
+            # Inform client that all files have been saved
+            client_connection.sendall(json.dumps({"file": 'done'}).encode('UTF-8'))
+        except IOError as error:
+            print("There was an error saving file", file_info.get('file_sub_path'), "\n")
+            print(error)
 
 
-        for dir in directories:
-            path = os.path.join(server_base_path, os.path.basename(dir))
-
-            if not os.path.exists(path):
-                os.mkdir(path)
-
-            self.recursive_dir_copy(directories=directories, current_dir=directories.get(dir), server_parent_path=path, client_base_path=dir)
-            break
-       
-
-        return json.dumps({'response': 'success'})
+        return json.dumps(self.get_current_directory_names(request_body=request_body))
 
 
 
     def handle_delete(self, request_body):
         deleting_items = request_body.get('to_delete')
 
-        for item in deleting_items:
+        for item_del in deleting_items:
+            item = os.path.join(request_body.get('base_dir'), item_del)
             if os.path.isfile(item):
                 os.remove(item)
             else:
                 rmtree(item)
 
-        request_body.update({'from': 'self'})
-        updated_directories = self.get_current_directory_names(request_body=request_body)
 
-
-        return json.dumps(updated_directories)
+        return json.dumps(self.get_current_directory_names(request_body=request_body))
 
 
     def handle_ls(self, request_body):
         return self.get_current_directory_names(request_body=request_body)
 
     def get_current_directory_names(self, request_body):
-        desired_directory = request_body.get('current_directory')
+        base_dir = request_body.get('base_dir')
+
+        desired_directory = base_dir /request_body.get('current_directory')
         
         # If the requested directory doesn't exist, create it.
         if not os.path.exists(desired_directory):
@@ -104,8 +118,9 @@ class ServerRequestHandlerSwitch(object):
         dict_of_dict_of_files = {}
 
 
-
         for root, directory, files in dir_file:
+
+            key = os.path.relpath(root, base_dir)
             dict_of_files = {
                 'name': os.path.basename(root),
                 'path': root,
@@ -113,45 +128,29 @@ class ServerRequestHandlerSwitch(object):
                 'file_names': files,
             }
 
-            dict_of_dict_of_files.update({root : dict_of_files})
+            if key[0] == '\\':
+                key = key[1:]
 
-        dict_of_dict_of_files.update({"base_path": desired_directory})
+            dict_of_dict_of_files.update({key : dict_of_files})
 
-        if request_body.get('from') == 'self':
-            return dict_of_dict_of_files
-        else:
-            return json.dumps(dict_of_dict_of_files)
+        return json.dumps(dict_of_dict_of_files)
 
     def handle_file(self, request_body):
-        # Create file path
         client_connection = request_body.get('client_connection')
-
-        # Write the file to specified location
+        
         try:
-            # Prepare file for writing
-            directory = request_body.get('current_directory')
-            write_to = request_body.get('path')
-            opened_file = open(write_to, 'wb')
+            file_path = os.path.join(request_body.get('base_dir'), request_body.get('current_directory'), request_body.get('name'))
+            opened_file = open(file_path, 'wb')
 
-            confirm_body = {
-                'response': 'ready'
-            }
-            
-            # Send a confirmation to Client
-            client_connection.sendall(json.dumps(confirm_body).encode('UTF-8'))
-
-            # If opening the desired location was successful,
-            # get the bytes of the uploaded file and attempt
-            # to write it.
-
-            file = client_connection.recv(request_body.get('file_size'))
-            opened_file.write(file)
+            client_connection.sendall(json.dumps({'status': 'ready'}).encode('UTF-8'))
+            opened_file.write(client_connection.recv(request_body.get('size')))
             opened_file.close()
+
+            
 
             final_body = {
                 'response': 'File Saved',
-                'updated_directories': self.get_current_directory_names(request_body={'current_directory': directory,
-                                                                                      'from': 'self'})
+                'updated_directories': self.get_current_directory_names(request_body=request_body)
             }
         except IOError:
             final_body = {
