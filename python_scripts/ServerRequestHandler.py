@@ -41,10 +41,12 @@ class ServerRequestHandlerSwitch(object):
 
     def handle_directory(self, request_body):
         client_connection = request_body.get('client_connection')
-        directories = request_body.get('directories')
-        files = request_body.get('files')
-        paste_dir = request_body.get('current_directory')
-        base_dir = os.path.join(request_body.get('base_dir'), paste_dir)
+        dropped_info = json.loads(client_connection.recv(request_body.get('size')).decode("UTF-8"))
+        print("Dropped info", dropped_info, '\n')
+        directories = dropped_info.get('directories')
+        files = dropped_info.get('files')
+        paste_dir = dropped_info.get('current_directory')
+        base_dir = Path(request_body.get('base_dir'), paste_dir)
 
         # Create Directories if they don't already exist from sent list of directories
         try:
@@ -62,6 +64,8 @@ class ServerRequestHandlerSwitch(object):
         try:
             for file_key in files:
                 file_info = files.get(file_key)
+                print("File_Key:", file_key, '\n')
+                print("File_info:", file_info, '\n')
 
                 # Ask client for next file in list
                 file_request = {
@@ -73,7 +77,7 @@ class ServerRequestHandlerSwitch(object):
                 file_size = json.loads(client_connection.recv(100).decode('UTF-8'))
                 file_bytes = client_connection.recv(file_size.get('size'))
 
-                file = open(Path(request_body.get('base_dir'), request_body.get('current_directory'), file_info.get('file_sub_path')), 'wb')
+                file = open(Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path')), 'wb')
                 file.write(file_bytes)
                 file.close()
 
@@ -83,8 +87,14 @@ class ServerRequestHandlerSwitch(object):
             print("There was an error saving file", file_info.get('file_sub_path'), "\n")
             print(error)
 
+        request_body.update({'current_directory': paste_dir})
 
-        return json.dumps(self.get_current_directory_names(request_body=request_body))
+        final_body = {
+            'response': 'Directory Saved',
+            'updated_directories': self.get_current_directory_names(request_body=request_body)
+        }
+
+        return json.dumps(final_body)
 
 
 
@@ -98,8 +108,11 @@ class ServerRequestHandlerSwitch(object):
             else:
                 rmtree(item)
 
-
-        return json.dumps(self.get_current_directory_names(request_body=request_body))
+        final_body = {
+            'response': 'File Deleted',
+            'updated_directories': self.get_current_directory_names(request_body=request_body)
+        }
+        return json.dumps(final_body)
 
 
     def handle_ls(self, request_body):
@@ -108,7 +121,7 @@ class ServerRequestHandlerSwitch(object):
     def get_current_directory_names(self, request_body):
         base_dir = request_body.get('base_dir')
 
-        desired_directory = base_dir /request_body.get('current_directory')
+        desired_directory = base_dir / request_body.get('current_directory')
         
         # If the requested directory doesn't exist, create it.
         if not os.path.exists(desired_directory):

@@ -64,7 +64,6 @@ let user;
       response_body = JSON.parse(results[1]);
       console.log("response body: ", response_body);
       response_body["user"] = user;
-      console.log("base_path: ", response_body["base_path"]);
 
       window.webContents.send('file-names', response_body, user);
     })
@@ -90,7 +89,8 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
       console.log('\n\nResults: ', results, '\n')
-      response_body['updated_directories'] = JSON.parse(results[1]);
+      response_body = JSON.parse(results[1]);
+
       window.webContents.send('update-file-names', response_body);
     })
 
@@ -106,7 +106,7 @@ let user;
       if  (err) throw err;
       console.log('\nresults: ', results); 
 
-      response_body['updated_directories'] = JSON.parse(results[1]);
+      response_body = JSON.parse(results[1]);
 
       console.log("\nresponse_body: ", response_body, "\n");
       window.webContents.send('update-file-names', response_body);
