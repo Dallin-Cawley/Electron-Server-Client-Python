@@ -30,6 +30,11 @@ let user;
                   if  (err)  throw err;
                   response_body = JSON.parse(results[1]);
                 })
+
+                PythonShell.run('python_scripts/client.py', options, function(err, results){
+                  if  (err)  throw err;
+                  response_body = JSON.parse(results[1]);
+                })
               }
             },
             {

@@ -4,7 +4,8 @@ echo "Retrieving Update from Repository"
 while :
 do
 if pgrep -f "python3 server" >/dev/null; then
-    echo "Waiting for Server to Shut Down."
+    echo "Shutting down server"
+    fuser -k 8001/tcp
 else
     break
 fi
