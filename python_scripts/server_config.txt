@@ -1,1 +1,1 @@
-base_dir=C:/Users/lette/Documents/Server-Files
+base_dir=/home/timmy2654/Documents/Server-Files

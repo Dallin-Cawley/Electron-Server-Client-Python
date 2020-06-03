@@ -20,7 +20,8 @@ let user;
           submenu: [
             {
               label: 'Update Server',
-              updateServer() {
+              click() {
+                console.log("Attempting to Update Server")
                 options = {
                   args: ['update_server']
                 }
@@ -30,10 +31,18 @@ let user;
                   response_body = JSON.parse(results[1]);
                 })
               }
+            },
+            {
+              label: 'Dev Tools',
+              click() {
+                window.webContents.openDevTools();
+              }
             } 
           ]
       }
     ])
+
+    Menu.setApplicationMenu(menu);
 
   }
 

@@ -1,8 +1,8 @@
 import os
-
-from security import security
 import json
 import globals
+
+from security import security
 from sys import getsizeof
 from shutil import rmtree
 from pathlib import Path
@@ -37,8 +37,6 @@ class ServerRequestHandlerSwitch(object):
             }
 
         return json.dumps(body)
-
-    def handle_update(self, request_body):
         
 
     def handle_directory(self, request_body):

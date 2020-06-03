@@ -16,7 +16,7 @@ class ClientRequestHandlerSwitch(object):
 
         client_socket.sendall(json.dumps({'header': 'update'}).encode('UTF-8'))
 
-        return client
+        return {'response:': 'sent'}
 
     def handle_login(self, function_call_body):
         client_socket = function_call_body.get('client_socket')
