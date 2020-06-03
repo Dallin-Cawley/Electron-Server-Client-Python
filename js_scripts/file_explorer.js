@@ -33,8 +33,13 @@ function create_li_elements(file_body) {
 	for (file_index in file_list){
 
 		//Create <li> element
-		let li_node = document.createElement("LI");
+		let li_node = document.createElement("li");
 		let text = document.createTextNode(file_list[file_index]);
+		
+		let div_node = document.createElement("div")
+		div_node.appendChild(text);
+		div_node.id = 'div_' + file_list[file_index];
+		
 		li_node.id = file_list[file_index];
 		
 		//Create and adjust image
@@ -44,7 +49,7 @@ function create_li_elements(file_body) {
 		image.width = "100";
 		image.height = "100";
 
-		li_node.appendChild(text);
+		li_node.appendChild(div_node);
 		li_node.appendChild(image);
 
 		/*********************************
@@ -60,10 +65,23 @@ function create_li_elements(file_body) {
 			}
 		}
 
+		div_node.addEventListener('keydown', editableInputChange)
+
+		//On Click or on Click if selected
 		li_node.onclick = (event) => {
-			liOnClick(event);
+			selected_item = path.join(program_state.current_directory, event.target.id);
+			if (program_state.selected_files.includes(selected_item) && program_state.selected_files.length == 1) {
+				renameItem(event);
+			}
+			else {
+				liOnClick(event);
+			}
 		}
 
+		/* ********************************
+		 * Create events for Directory <li>
+		 * nodes
+		 * ********************************/
 		if (directory == true){
 			//OnDrop events
 			li_node.ondrop = (event) => {
@@ -127,9 +145,8 @@ ipcRenderer.on('file-names', function(event, directory_info, user){
 	program_state.current_directory = user
 
 	update_file_paths()
-	//console.log("remote directories: ", remote_directories);
-	//Create Directories as <li>
 
+	//Create Directories as <li>
 	file_body = {
 		'directory': true,
 		'to_display': directory_info[program_state.user].sub_directories,
@@ -214,6 +231,11 @@ function update_file_paths() {
 function liOnClick(event) {
 	event.preventDefault();
 	event.stopPropagation();
+
+	if (event.target.contentEditable == "true") {
+		return;
+	}
+
 	if (event.shiftKey == true) {
 
 		if (program_state.selected_files.length > 0) {
@@ -265,10 +287,11 @@ function liOnClick(event) {
 		program_state.recent_selection = event.target.id;
 	}
 	else {
-
+		console.log("Selected Files:", program_state.selected_files);
 		//Set currently selected items back to default background color
 		for (i = 0; i < program_state.selected_files.length; i++){
 			let { dir, name, ext } = path.parse(program_state.selected_files[i]);
+			console.log("Name + ext:", name + ext);
 			document.getElementById(name + ext).style.backgroundColor = '#99badd';
 		}
 
@@ -283,19 +306,54 @@ function liOnClick(event) {
 	}
 }
 
+
+//Change the name of a File or Directory
+function renameItem(event) {
+	li_id = event.target.id.replace("div_", '');
+	li_child_list = document.getElementById(li_id).childNodes;
+	li_item = 0;
+
+	//Find the div element
+	for (i = 0; i < li_child_list.length; i++) {
+
+		if (li_child_list[i].tagName == "DIV") {
+			li_item = li_child_list[i];
+			break;
+		}
+	}
+
+	if (li_item == 0) {
+		console.log("Div element for", event.target.id, "not found.");
+		return;
+	}
+	
+	//div element was found. Allow it to be edited.
+	li_item.contentEditable = "true";
+
+}
+
+function editableInputChange(event) {
+
+	//Enter key was pressed
+	if (event.keyCode == 13) {
+		//Prevent the return character
+		event.preventDefault();
+		rename_body = {
+			'old_name': program_state.selected_files[0],
+			'new_name': event.target.textContent
+		}
+		document.getElementById(event.target.id).contentEditable = 'false';
+		ipcRenderer.send('rename-element', JSON.stringify(rename_body));
+	}
+}
+
 //Removes all selections
 function fileWindowClick(event) {
 
 	//Set currently selected items back to default background color
 	for (i = 0; i < program_state.selected_files.length; i++){
 		let { dir, name, ext } = path.parse(program_state.selected_files[i]);
-
-		if (ext != '') {
-			document.getElementById(name + ext).style.backgroundColor = '#99badd';
-		}
-		else {
-			document.getElementById(name).style.backgroundColor = '#99badd';
-		}
+		document.getElementById(name + ext).style.backgroundColor = '#99badd';
 	}
 
 	program_state.selected_files.length = 0;

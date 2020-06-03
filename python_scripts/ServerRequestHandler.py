@@ -38,6 +38,8 @@ class ServerRequestHandlerSwitch(object):
 
         return json.dumps(body)
 
+    def handle_update(self, request_body):
+        
 
     def handle_directory(self, request_body):
         client_connection = request_body.get('client_connection')

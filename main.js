@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain} = require('electron');
+const {app, BrowserWindow, ipcMain, Menu} = require('electron');
 let {PythonShell} = require('python-shell');
 let window;
 let user;
@@ -13,6 +13,27 @@ let user;
         }
     })
     window.loadFile('login.html');
+
+    var menu = Menu.buildFromTemplate([
+      {
+        label: 'File',
+          submenu: [
+            {
+              label: 'Update Server',
+              updateServer() {
+                options = {
+                  args: ['update_server']
+                }
+            
+                PythonShell.run('python_scripts/client.py', options, function(err, results){
+                  if  (err)  throw err;
+                  response_body = JSON.parse(results[1]);
+                })
+              }
+            } 
+          ]
+    ])
+
   }
 
   app.on('ready', createWindow);
@@ -37,7 +58,6 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function  (err, results)  {
     
       if  (err)  throw err;
-      console.log(results)
       response_body = JSON.parse(results[1]);
 
       //If authenticated, allow user to view their files
@@ -62,9 +82,7 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function(err, results){
       if  (err)  throw err;
       response_body = JSON.parse(results[1]);
-      console.log("response body: ", response_body);
       response_body["user"] = user;
-      console.log("base_path: ", response_body["base_path"]);
 
       window.webContents.send('file-names', response_body, user);
     })
@@ -89,7 +107,6 @@ let user;
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-      console.log('\n\nResults: ', results, '\n')
       response_body['updated_directories'] = JSON.parse(results[1]);
       window.webContents.send('update-file-names', response_body);
     })
@@ -104,11 +121,21 @@ let user;
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-      console.log('\nresults: ', results); 
 
       response_body['updated_directories'] = JSON.parse(results[1]);
 
-      console.log("\nresponse_body: ", response_body, "\n");
       window.webContents.send('update-file-names', response_body);
     })
+  })
+
+  ipcMain.on('rename-element', (event, rename_body) => {
+    console.log("Rename body:", rename_body, '\n')
+    options = {
+      args: ['rename', rename_body]
+    }
+
+      // PythonShell.run('python_scripts/client.py', options, function(err, results) {     
+      //   if  (err) throw err;
+      //   console.log('\nresults: ', results); 
+      // })
   })

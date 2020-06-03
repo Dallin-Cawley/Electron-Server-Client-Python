@@ -10,6 +10,12 @@ class ClientRequestHandlerSwitch(object):
         handler = getattr(self, method_name, lambda: "Unable to complete Request")
         return handler(function_call_body=function_call_body)
 
+    def handle_update_server(self, function_call_body):
+        client_socket = function_call_body.get('client_socket')
+
+        client_socket.sendall(json.dumps({'header': 'update'}).encode('UTF-8'))
+
+        return client
 
     def handle_login(self, function_call_body):
         client_socket = function_call_body.get('client_socket')
@@ -78,6 +84,7 @@ class ClientRequestHandlerSwitch(object):
         list_dir_names.append(directory_sub_path)
         directory_walked = os.walk(directory_path)
 
+        # Get names of files in all sub-directories
         for root, sub_directories, files in directory_walked:
             for file in files:
                 dict_file_names.update({os.path.join(directory_sub_path, file): {
@@ -104,12 +111,14 @@ class ClientRequestHandlerSwitch(object):
         dropped_items = json.loads(function_call_body.get(2))
         client_socket = function_call_body.get('client_socket')
 
-        # List of File objects
+        # List of Directories
         directories = dropped_items.get('directories')
 
+        # List of File objects
         files = dropped_items.get('files')
         current_directory = dropped_items.get('current_directory')
 
+        # Get the directory and file names of each sub-directory recursively
         list_dir_names = []
         dict_file_names = {}
         for i in range(0, len(directories)):
@@ -159,7 +168,7 @@ class ClientRequestHandlerSwitch(object):
 
 
 
-        # Send all files
+        # Send All Files
         for file_obj in files:
             file = file_obj
 
@@ -170,10 +179,13 @@ class ClientRequestHandlerSwitch(object):
                 'current_directory': current_directory
             }
 
+            # Send File information
             client_socket.sendall(json.dumps(file_name).encode('UTF-8'))
             status = json.loads(client_socket.recv(100).decode('UTF-8'))
 
+            # If the file was opened properly on the server, send the file bytes
             if status.get('status') == 'ready':
+
                 opened_file = open(file.get('path'), 'rb')
 
                 client_socket.sendall(opened_file.read())
