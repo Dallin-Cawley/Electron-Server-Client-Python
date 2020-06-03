@@ -167,12 +167,14 @@ ipcRenderer.on('file-names', function(event, directory_info, user){
 ipcRenderer.on('update-file-names', function(event, response_body) {
 	console.log("Response body:", response_body);
 	updated_directories = response_body["updated_directories"];
+	console.log("updated_directories", updated_directories);
 
 	if (typeof updated_directories == 'string') {
-		updated_directories = JSON.parse(updated_directories)
+		updated_directories = JSON.parse(updated_directories);
 	}
 
-
+	// Set the parent_directory of each directory so that back navigation 
+	// in file explorer is possible
 	for (dir_key in updated_directories) {
 		if (dir_key != program_state.user) {
 			parent_path = dir_key.replace(path.basename(dir_key), '');
@@ -527,6 +529,7 @@ function showPrevDir(event) {
 		file_list_ul.removeChild(file_list_ul.lastChild);
 	}
 
+	console.log("selected_Directory: ", selected_directory)
 	//Create Directories as <li>
 	file_body = {
 		'directory': true,

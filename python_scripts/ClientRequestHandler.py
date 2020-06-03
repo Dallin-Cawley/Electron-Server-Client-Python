@@ -1,6 +1,7 @@
 import json
 import os
 from sys import getsizeof
+from pathlib import Path
 
 class ClientRequestHandlerSwitch(object):
 
@@ -63,11 +64,10 @@ class ClientRequestHandlerSwitch(object):
 
     def handle_file_view(self, function_call_body):
         client_socket = function_call_body.get('client_socket')
-        requested_directory = os.path.join('C:\\','Users','lette','Documents','Server-Files', function_call_body.get(2))
 
         body = {
             'header': 'ls',
-            'current_directory': requested_directory
+            'current_directory': function_call_body.get(2)
         }
 
         client_socket.sendall(json.dumps(body).encode('UTF-8'))
@@ -121,19 +121,28 @@ class ClientRequestHandlerSwitch(object):
         # Get the directory and file names of each sub-directory recursively
         list_dir_names = []
         dict_file_names = {}
+        j = 0
+
         for i in range(0, len(directories)):
             r_dir_names, r_file_names = self.recursive_get_dir_names(directories[i].get('path'), directories[i].get('name'))
             list_dir_names.append(r_dir_names)
             dict_file_names.update(r_file_names)
             
         directory_body = {
-            'header': 'directory',
             'directories': list_dir_names,
             'files': dict_file_names,
             'current_directory': current_directory
         }
+        directory_body_bytes = json.dumps(directory_body).encode('UTF-8')
+
+        size_body = {
+            'header': 'directory',
+            'size': len(directory_body_bytes)
+        }
+        client_socket.sendall(json.dumps(size_body).encode("UTF-8"))
+
         # Send Directory names for creation
-        client_socket.sendall(json.dumps(directory_body).encode('UTF-8'))
+        client_socket.sendall(directory_body_bytes)
 
 
 
@@ -195,7 +204,7 @@ class ClientRequestHandlerSwitch(object):
 
             else:
                 print("Server was unable to open", file.get('name'))
-        
+
         return response
 
 
