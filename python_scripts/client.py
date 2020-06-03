@@ -12,7 +12,7 @@ login_success = False
 
 def main():
     client_socket = socket.socket()
-    
+    # Testing comment
     # Connect to remote host
     client_socket.connect(('73.6.148.194', 10000))
     # client_socket.connect(('127.0.0.1', 8001))
