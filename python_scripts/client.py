@@ -14,8 +14,8 @@ def main():
     client_socket = socket.socket()
     
     # Connect to remote host
-    # client_socket.connect(('73.6.148.194', 10000))
-    client_socket.connect(('127.0.0.1', 8001))
+    client_socket.connect(('73.6.148.194', 10000))
+    # client_socket.connect(('127.0.0.1', 8001))
     print(json.loads(client_socket.recv(1024).decode('UTF-8')).get('response'))
 
     header = sys.argv[1]

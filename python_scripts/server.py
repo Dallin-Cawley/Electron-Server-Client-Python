@@ -19,7 +19,7 @@ def main():
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
     # Bind the socket to a port for use
-    server_socket.bind(('', 8001))
+    server_socket.bind(('', 10000))
     print("Server socket bount to", server_socket.getsockname())
 
     # Listen for a connection
