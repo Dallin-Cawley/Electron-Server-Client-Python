@@ -5,7 +5,7 @@ while :
 do
 if pgrep -f "python3 server" >/dev/null; then
     echo "Shutting down server"
-    fuser -k 8001/tcp
+    fuser -k 10000/tcp
 else
     break
 fi
