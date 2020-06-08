@@ -108,6 +108,7 @@ class ClientRequestHandlerSwitch(object):
 
     def handle_send_file(self, function_call_body):
         dropped_items = json.loads(function_call_body.get(3))
+        user = function_call_body.get(2)
 
         # List of Directories
         directories = dropped_items.get('directories')
@@ -128,7 +129,8 @@ class ClientRequestHandlerSwitch(object):
         directory_body = {
             'directories': list_dir_names,
             'files': dict_file_names,
-            'current_directory': current_directory
+            'current_directory': current_directory,
+            'user': user
         }
 
         size_body = {
@@ -147,20 +149,14 @@ class ClientRequestHandlerSwitch(object):
                 # Recieve file request
                 response = self.net_socket.response()
                 file_name = response.get('file')
-                
+
                 if file_name == 'done':
                     break
 
                 opened_file = open(file_name, 'rb')
 
-                # Send the size of file
-                size_body = {
-                    'size': os.stat(response.get('file')).st_size
-                }
-                self.net_socket.send(size_body)
+                self.net_socket.send_file(opened_file.read())
 
-                # Send file bytes
-                self.net_socket.send(opened_file.read())
                 opened_file.close()
             except:
                 print("Unable to save file", response.get('file'))

@@ -2,11 +2,12 @@ import os
 import json
 import globals
 import log
+import sys
 
 from security import security
 from sys import getsizeof
 from shutil import rmtree
-from pathlib import Path
+from pathlib import PurePath, Path
 
 
 class ServerRequestHandlerSwitch:
@@ -32,8 +33,8 @@ class ServerRequestHandlerSwitch:
                     'response': 'true',
                     'user': user
                 }
-                service = "\n\n" + '(' + user + ')' + " has been logged in.\n"
-                log.main_log(user=user, base_dir=request_body.get("base_dir"), service_provided=service)
+                service = '(' + user + ')' + " has been logged in.\n"
+                log.main_log(user=user, base_dir=request_body.get("base_dir"), service_provided=service, logging_in=True)
             else:
                 body = {
                     'response': 'false'
@@ -48,30 +49,32 @@ class ServerRequestHandlerSwitch:
 
     def handle_directory(self, request_body):
         dropped_info = self.con_socket.request()
-        print("Dropped info", dropped_info, '\n')
         directories = dropped_info.get('directories')
         files = dropped_info.get('files')
         paste_dir = dropped_info.get('current_directory')
         base_dir = Path(request_body.get('base_dir'), paste_dir)
 
         # Create Directories if they don't already exist from sent list of directories
+        directory_list = []
         try:
             for dir_list in directories:
                 for dir in dir_list:
-                    print("dir:", dir)
                     full_path = Path(base_dir, dir)
 
                     if not os.path.exists(full_path):
                         os.mkdir(full_path)
-        except:
+                        directory_list.append(dir)
+
+        except TypeError as type_error:
             print("There was an error creating directory")
+            print(type_error)
+        
+        log.log_directory(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), directory_list=directory_list)
 
         # Get files and save them to this machine
         try:
             for file_key in files:
                 file_info = files.get(file_key)
-                print("File_Key:", file_key, '\n')
-                print("File_info:", file_info, '\n')
 
                 # Ask client for next file in list
                 file_request = {
@@ -80,8 +83,8 @@ class ServerRequestHandlerSwitch:
                 self.con_socket.send(file_request)
 
                 # Recieve the file bytes and write them
-                file_bytes = self.con_socket.response
-
+                file_bytes = self.con_socket.recieve_file()
+                write_to = Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path'))
                 file = open(Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path')), 'wb')
                 file.write(file_bytes)
                 file.close()
