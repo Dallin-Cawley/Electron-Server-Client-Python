@@ -32,7 +32,7 @@ class ServerRequestHandlerSwitch:
                     'response': 'true',
                     'user': user
                 }
-                service = '(' + user + ')' + " has been logged in.\n"
+                service = "\n\n" + '(' + user + ')' + " has been logged in.\n"
                 log.main_log(user=user, base_dir=request_body.get("base_dir"), service_provided=service)
             else:
                 body = {

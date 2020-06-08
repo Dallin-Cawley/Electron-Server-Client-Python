@@ -29,7 +29,6 @@ def main():
     server_socket.listen()
     print("Listening to connections....")
     print("Base Directory:", base_dir)
-    print("\n\nNew Statement.\n\n")
     
     # Begin servicing client's
     # start_new_thread(handle_connections, (server_socket, base_dir))
@@ -79,6 +78,7 @@ def handle_connections(server_socket, base_dir):
 
 def handle_client_connection(connection, base_dir):
     global shut_down
+    
     # Handle the connection
     connection.send({'response': 'Connection Accepted'})
     request_handler = ServerRequestHandlerSwitch(connection)

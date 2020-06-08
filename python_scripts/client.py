@@ -11,10 +11,10 @@ from net_socket import ClientSocket
 
 def main():
     client_socket = socket.socket()
-    # Testing comment
+
     # Connect to remote host
-    client_socket.connect(('73.6.148.194', 10000))
-    # client_socket.connect(('127.0.0.1', 10000))
+    # client_socket.connect(('73.6.148.194', 10000))
+    client_socket.connect(('127.0.0.1', 10000))
 
     cmd_arg = {}
     i = 0
@@ -29,7 +29,6 @@ def main():
     print(response)
     request_handler = ClientRequestHandlerSwitch(connection)
     print(json.dumps(request_handler.handle_function_call(cmd_arg.get(1), cmd_arg)), flush=True)
-    return
 
     quit = {
         'header': 'quit'

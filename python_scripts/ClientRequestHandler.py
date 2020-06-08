@@ -107,7 +107,7 @@ class ClientRequestHandlerSwitch(object):
 
 
     def handle_send_file(self, function_call_body):
-        dropped_items = json.loads(function_call_body.get(2))
+        dropped_items = json.loads(function_call_body.get(3))
 
         # List of Directories
         directories = dropped_items.get('directories')
@@ -147,6 +147,7 @@ class ClientRequestHandlerSwitch(object):
                 # Recieve file request
                 response = self.net_socket.response()
                 file_name = response.get('file')
+                
                 if file_name == 'done':
                     break
 
