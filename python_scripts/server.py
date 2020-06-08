@@ -1,12 +1,14 @@
 import socket
-from _thread import start_new_thread, exit
 import json
-import ServerRequestHandler
 import globals
-from os import path, system
 import tkinter
 import tkinter.filedialog
+
+from _thread import start_new_thread, exit
+from os import path, system
 from pathlib import Path
+from net_socket import ServerSocket
+from ServerRequestHandler import ServerRequestHandlerSwitch
 
 shut_down = False
 
@@ -17,9 +19,10 @@ def main():
     print("Base directory recieved.")
     # Create a socket
     server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
     # Bind the socket to a port for use
-    server_socket.bind(('', 10000))
+    server_socket.bind(('0.0.0.0', 10000))
     print("Server socket bount to", server_socket.getsockname())
 
     # Listen for a connection
@@ -33,6 +36,7 @@ def main():
 
 
 def start_up():
+
     if path.exists('server_config.txt'):
         config_txt = open('server_config.txt', 'r')
         base_dir = config_txt.readline()
@@ -64,22 +68,26 @@ def handle_connections(server_socket, base_dir):
     
         connection, con_address = server_socket.accept()
         print("Connected to", con_address)
-        start_new_thread(handle_client_connection, (connection, base_dir))
-
-    system('cd ../bash_scripts; bash update_server.sh')
+        connection_socket = ServerSocket(connection)
+        start_new_thread(handle_client_connection, (connection_socket, base_dir))
 
     server_socket.close()
+    system('cd ../bash_scripts; bash update_server.sh')
+    shut_down = False
 
 
-def handle_client_connection(client_connection, base_dir):
+def handle_client_connection(connection, base_dir):
     global shut_down
     # Handle the connection
-    client_connection.sendall(json.dumps({'response': 'Connection Accepted'}).encode('UTF-8'))
-    request_handler = ServerRequestHandler.ServerRequestHandlerSwitch()
+    connection.send({'response': 'Connection Accepted'})
+    request_handler = ServerRequestHandlerSwitch(connection)
+    print("About to enter servitude")
     while True:
         try:
             # Get request from client
-            request_body = json.loads(client_connection.recv(2000).decode('UTF-8'))
+            print("Before getting the request")
+            request_body = connection.request()
+            request_body.update({'base_dir': base_dir})
             print("Request Body: ", request_body, "\n\n")
 
             if request_body.get('header') == 'update':
@@ -87,10 +95,6 @@ def handle_client_connection(client_connection, base_dir):
                 shut_down = True
                 break
 
-
-            # Add the client_socket to the request body for later use
-            request_body.update({'client_connection': client_connection})
-            request_body.update({'base_dir': base_dir})
             header = request_body.get("header")
 
             # When the Client wishes to disconnect
@@ -98,19 +102,13 @@ def handle_client_connection(client_connection, base_dir):
                 body = {
                     'response': 'Connection Terminating'
                 }
-                client_connection.sendall(json.dumps(body).encode('UTF-8'))
+                connection.send(body)
                 break
             
-            sending_json = request_handler.handle_request(header=header, request_body=request_body)
+            response = request_handler.handle_request(header=header, request_body=request_body)
             
-            body = {
-                'size': len(sending_json.encode('UTF-8'))
-            }
-
-            print("Before sending first response")
-            client_connection.sendall(json.dumps(body).encode('UTF-8'))
             print("Before sending second response", '\n')
-            client_connection.sendall(sending_json.encode('UTF-8'))
+            connection.send(response)
 
         except ValueError:
             data = {
@@ -118,12 +116,7 @@ def handle_client_connection(client_connection, base_dir):
             }
             continue
 
-    if shut_down == True:
-        print("Shut down is true")
-    else:
-        print("Shut down is false")
-
-    client_connection.close()
+    connection.close()
     exit()
 
 

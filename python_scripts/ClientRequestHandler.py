@@ -1,25 +1,27 @@
-import json
 import os
+import json
+
 from sys import getsizeof
 from pathlib import Path
+from net_socket import ClientSocket
 
 class ClientRequestHandlerSwitch(object):
+    def __init__(self, client_socket):
+        self.net_socket = client_socket
+
 
     def handle_function_call(self, header, function_call_body):
         method_name = 'handle_' + header
-
         handler = getattr(self, method_name, lambda: "Unable to complete Request")
+        
         return handler(function_call_body=function_call_body)
 
     def handle_update_server(self, function_call_body):
-        client_socket = function_call_body.get('client_socket')
-
-        client_socket.sendall(json.dumps({'header': 'update'}).encode('UTF-8'))
+        self.net_socket.send({'header': 'update'})
 
         return {'response:': 'sent'}
 
     def handle_login(self, function_call_body):
-        client_socket = function_call_body.get('client_socket')
 
         body = {
             'header': 'login',
@@ -27,21 +29,20 @@ class ClientRequestHandlerSwitch(object):
             'password': function_call_body.get(3)
         }
 
-        client_socket.sendall(json.dumps(body).encode('UTF-8'))
-        recieving_size = json.loads(client_socket.recv(1024).decode('UTF-8'))
-        response = json.loads(client_socket.recv(recieving_size.get('size')).decode('UTF-8'))
+        self.net_socket.send(body)
+        response = self.net_socket.response()
 
         if response.get('response') == 'true':
             response_body = {
                 'authenticated': True,
                 'user': response.get('user')
             }
-            return response_body
         else:
             response_body = {
                 'authenticated': False,
             }
-            return response_body
+        
+        return response_body
 
 
     def handle_delete(self, function_call_body):
@@ -63,18 +64,16 @@ class ClientRequestHandlerSwitch(object):
 
 
     def handle_file_view(self, function_call_body):
-        client_socket = function_call_body.get('client_socket')
 
         body = {
             'header': 'ls',
             'current_directory': function_call_body.get(2)
         }
 
-        client_socket.sendall(json.dumps(body).encode('UTF-8'))
-        recieving_size = json.loads(client_socket.recv(1024).decode('UTF-8'))
-        current_directory_list = client_socket.recv(recieving_size.get('size')).decode('UTF-8')
+        self.net_socket.send(body)
+        current_directory_list = self.net_socket.response()
 
-        return json.loads(current_directory_list)
+        return current_directory_list
 
 
     def recursive_get_dir_names(self, directory_path, directory_sub_path):
@@ -109,7 +108,6 @@ class ClientRequestHandlerSwitch(object):
 
     def handle_send_file(self, function_call_body):
         dropped_items = json.loads(function_call_body.get(2))
-        client_socket = function_call_body.get('client_socket')
 
         # List of Directories
         directories = dropped_items.get('directories')
@@ -121,7 +119,6 @@ class ClientRequestHandlerSwitch(object):
         # Get the directory and file names of each sub-directory recursively
         list_dir_names = []
         dict_file_names = {}
-        j = 0
 
         for i in range(0, len(directories)):
             r_dir_names, r_file_names = self.recursive_get_dir_names(directories[i].get('path'), directories[i].get('name'))
@@ -133,16 +130,14 @@ class ClientRequestHandlerSwitch(object):
             'files': dict_file_names,
             'current_directory': current_directory
         }
-        directory_body_bytes = json.dumps(directory_body).encode('UTF-8')
 
         size_body = {
             'header': 'directory',
-            'size': len(directory_body_bytes)
         }
-        client_socket.sendall(json.dumps(size_body).encode("UTF-8"))
+        self.net_socket.send(size_body)
 
         # Send Directory names for creation
-        client_socket.sendall(directory_body_bytes)
+        self.net_socket.send(directory_body)
 
 
 
@@ -150,7 +145,7 @@ class ClientRequestHandlerSwitch(object):
         while True:
             try:
                 # Recieve file request
-                response = json.loads(client_socket.recv(1024).decode('UTF-8'))
+                response = self.net_socket.response()
                 file_name = response.get('file')
                 if file_name == 'done':
                     break
@@ -161,19 +156,16 @@ class ClientRequestHandlerSwitch(object):
                 size_body = {
                     'size': os.stat(response.get('file')).st_size
                 }
-                client_socket.sendall(json.dumps(size_body).encode('UTF-8'))
+                self.net_socket.send(size_body)
 
                 # Send file bytes
-                client_socket.sendall(opened_file.read())
+                self.net_socket.send(opened_file.read())
                 opened_file.close()
             except:
                 print("Unable to save file", response.get('file'))
                 return response
 
-
-
-        size = json.loads(client_socket.recv(100).decode('UTF-8'))
-        response = json.loads(client_socket.recv(size.get('size')).decode('UTF-8'))
+        response = self.net_socket.response()
 
 
 
@@ -189,18 +181,17 @@ class ClientRequestHandlerSwitch(object):
             }
 
             # Send File information
-            client_socket.sendall(json.dumps(file_name).encode('UTF-8'))
-            status = json.loads(client_socket.recv(100).decode('UTF-8'))
+            self.net_socket.send(file_name)
+            status = self.net_socket.response()
 
             # If the file was opened properly on the server, send the file bytes
             if status.get('status') == 'ready':
 
                 opened_file = open(file.get('path'), 'rb')
 
-                client_socket.sendall(opened_file.read())
+                self.net_socket.send(opened_file.read())
 
-                response_size = json.loads(client_socket.recv(100).decode('UTF-8'))
-                response = json.loads(client_socket.recv(response_size.get('size')).decode('UTF-8'))
+                response = self.net_socket.response()
 
             else:
                 print("Server was unable to open", file.get('name'))

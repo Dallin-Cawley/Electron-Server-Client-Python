@@ -1,6 +1,7 @@
 import os
 import json
 import globals
+import log
 
 from security import security
 from sys import getsizeof
@@ -8,7 +9,10 @@ from shutil import rmtree
 from pathlib import Path
 
 
-class ServerRequestHandlerSwitch(object):
+class ServerRequestHandlerSwitch:
+    def __init__(self, con_socket):
+        self.con_socket = con_socket
+
     def handle_request(self, header, request_body):
         if " " in header:
             header = header.replace(" ", "_")
@@ -23,10 +27,13 @@ class ServerRequestHandlerSwitch(object):
             print('\nHashed password: ', security.encrypt_password(request_body.get('password')), '\n')
             if security.check_encrypted_password(request_body.get('password'),
                                                  globals.users.get(request_body.get('username')).get('password')):
+                user = globals.users.get(request_body.get('username')).get('user')
                 body = {
                     'response': 'true',
-                    'user': globals.users.get(request_body.get('username')).get('user')
+                    'user': user
                 }
+                service = '(' + user + ')' + " has been logged in.\n"
+                log.main_log(user=user, base_dir=request_body.get("base_dir"), service_provided=service)
             else:
                 body = {
                     'response': 'false'
@@ -36,12 +43,11 @@ class ServerRequestHandlerSwitch(object):
                 'response': 'false'
             }
 
-        return json.dumps(body)
+        return body
         
 
     def handle_directory(self, request_body):
-        client_connection = request_body.get('client_connection')
-        dropped_info = json.loads(client_connection.recv(request_body.get('size')).decode("UTF-8"))
+        dropped_info = self.con_socket.request()
         print("Dropped info", dropped_info, '\n')
         directories = dropped_info.get('directories')
         files = dropped_info.get('files')
@@ -71,18 +77,17 @@ class ServerRequestHandlerSwitch(object):
                 file_request = {
                     'file': file_info.get('file_full_path')
                 }
-                client_connection.sendall(json.dumps(file_request).encode('UTF-8'))
+                self.con_socket.send(file_request)
 
                 # Recieve the file bytes and write them
-                file_size = json.loads(client_connection.recv(100).decode('UTF-8'))
-                file_bytes = client_connection.recv(file_size.get('size'))
+                file_bytes = self.con_socket.response
 
                 file = open(Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path')), 'wb')
                 file.write(file_bytes)
                 file.close()
 
             # Inform client that all files have been saved
-            client_connection.sendall(json.dumps({"file": 'done'}).encode('UTF-8'))
+            self.con_socket.send({"file": 'done'})
         except IOError as error:
             print("There was an error saving file", file_info.get('file_sub_path'), "\n")
             print(error)
@@ -94,7 +99,7 @@ class ServerRequestHandlerSwitch(object):
             'updated_directories': self.get_current_directory_names(request_body=request_body)
         }
 
-        return json.dumps(final_body)
+        return final_body
 
 
 
@@ -112,7 +117,7 @@ class ServerRequestHandlerSwitch(object):
             'response': 'File Deleted',
             'updated_directories': self.get_current_directory_names(request_body=request_body)
         }
-        return json.dumps(final_body)
+        return final_body
 
 
     def handle_ls(self, request_body):
@@ -146,7 +151,7 @@ class ServerRequestHandlerSwitch(object):
 
             dict_of_dict_of_files.update({key : dict_of_files})
 
-        return json.dumps(dict_of_dict_of_files)
+        return dict_of_dict_of_files
 
     def handle_file(self, request_body):
         client_connection = request_body.get('client_connection')
@@ -172,7 +177,7 @@ class ServerRequestHandlerSwitch(object):
 
 
         # Send a confirmation to Client
-        return json.dumps(final_body)
+        return final_body
 
     def handle_new_user(self, request_body):
         hashed_password = security.encrypt_password(request_body.get('password'))
@@ -190,4 +195,4 @@ class ServerRequestHandlerSwitch(object):
             'response': 'User Created'
         }
 
-        return json.dumps(body)
+        return body

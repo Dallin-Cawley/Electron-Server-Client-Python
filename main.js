@@ -73,6 +73,7 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function  (err, results)  {
     
       if  (err)  throw err;
+      console.log(results)
       response_body = JSON.parse(results[1]);
 
       //If authenticated, allow user to view their files
@@ -116,7 +117,7 @@ let user;
   ipcMain.on('ondrop', (event, dropped_items) => {
 
     options = {
-      args: ['send_file', dropped_items]
+      args: ['send_file', user, dropped_items]
     }
     console.log("Dropped items: ", dropped_items, "\n");
 
@@ -132,7 +133,7 @@ let user;
   ipcMain.on('delete-file-dir', (event, delete_list, current_directory) => {
 
     options = {
-      args:['delete', delete_list, current_directory]
+      args:['delete', user, delete_list, current_directory]
     }
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
@@ -147,7 +148,7 @@ let user;
   ipcMain.on('rename-element', (event, rename_body) => {
     console.log("Rename body:", rename_body, '\n')
     options = {
-      args: ['rename', rename_body]
+      args: ['rename', user, rename_body]
     }
 
       // PythonShell.run('python_scripts/client.py', options, function(err, results) {     
