@@ -29,6 +29,7 @@ def main():
     server_socket.listen()
     print("Listening to connections....")
     print("Base Directory:", base_dir)
+    print("\n\nNew Statement.\n\n")
     
     # Begin servicing client's
     # start_new_thread(handle_connections, (server_socket, base_dir))
