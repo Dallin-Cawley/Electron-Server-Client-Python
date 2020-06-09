@@ -3,6 +3,7 @@ import json
 import globals
 import tkinter
 import tkinter.filedialog
+import log
 
 from _thread import start_new_thread, exit
 from os import path, system
@@ -82,14 +83,11 @@ def handle_client_connection(connection, base_dir):
     # Handle the connection
     connection.send({'response': 'Connection Accepted'})
     request_handler = ServerRequestHandlerSwitch(connection)
-    print("About to enter servitude")
     while True:
         try:
             # Get request from client
-            print("Before getting the request")
             request_body = connection.request()
             request_body.update({'base_dir': base_dir})
-            print("Request Body: ", request_body, "\n\n")
 
             if request_body.get('header') == 'update':
                 print("Updating Shut_Down")

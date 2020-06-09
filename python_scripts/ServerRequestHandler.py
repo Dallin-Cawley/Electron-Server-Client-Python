@@ -68,12 +68,16 @@ class ServerRequestHandlerSwitch:
         except TypeError as type_error:
             print("There was an error creating directory")
             print(type_error)
+        except IOError as ioerror:
+            error = "IOError: unable to create Directory....\n\t" + ioerror
+            log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
         
         log.log_directory(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), directory_list=directory_list)
 
         # Get files and save them to this machine
-        try:
-            for file_key in files:
+        file_list = []
+        for file_key in files:
+            try:
                 file_info = files.get(file_key)
 
                 # Ask client for next file in list
@@ -84,16 +88,20 @@ class ServerRequestHandlerSwitch:
 
                 # Recieve the file bytes and write them
                 file_bytes = self.con_socket.recieve_file()
-                write_to = Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path'))
                 file = open(Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path')), 'wb')
                 file.write(file_bytes)
                 file.close()
+                file_list.append(file_info.get('file_sub_path'))
 
-            # Inform client that all files have been saved
-            self.con_socket.send({"file": 'done'})
-        except IOError as error:
-            print("There was an error saving file", file_info.get('file_sub_path'), "\n")
-            print(error)
+            except IOError as ioerror:
+                error = "There was an error saving file " + file_info.get('file_sub_path') + "\n\t" + ioerror
+                log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
+                continue
+
+        log.log_file(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), file_list=file_list)
+        # Inform client that all files have been saved
+        self.con_socket.send({"file": 'done'})
+
 
         request_body.update({'current_directory': paste_dir})
 

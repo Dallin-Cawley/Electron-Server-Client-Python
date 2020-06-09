@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 #server configuration
-/python_scripts/server_config.txt
+python_scripts/server_config.txt

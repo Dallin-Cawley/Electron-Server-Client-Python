@@ -1,1 +1,0 @@
-base_dir=/home/timmy2654/Documents/Server-Files
