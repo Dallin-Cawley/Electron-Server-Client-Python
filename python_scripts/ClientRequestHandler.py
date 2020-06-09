@@ -128,22 +128,23 @@ class ClientRequestHandlerSwitch(object):
             
         directory_body = {
             'directories': list_dir_names,
-            'files': dict_file_names,
+            'dir_files': dict_file_names,
+            'files': files,
             'current_directory': current_directory,
             'user': user
         }
 
-        size_body = {
-            'header': 'directory',
+        request_body = {
+            'header': 'upload',
         }
-        self.net_socket.send(size_body)
+        self.net_socket.send(request_body)
 
         # Send Directory names for creation
         self.net_socket.send(directory_body)
 
 
 
-        # Send Directory Files
+        # Send Directory and individual files
         while True:
             try:
                 # Recieve file request
@@ -158,40 +159,41 @@ class ClientRequestHandlerSwitch(object):
                 self.net_socket.send_file(opened_file.read())
 
                 opened_file.close()
-            except:
-                print("Unable to save file", response.get('file'))
+            except FileNotFoundError as error:
+                print("Unable to find:", file_name)
+                print(error)
                 return response
 
         response = self.net_socket.response()
 
 
+        # file_path_list = []
+        # for file in files:
+        #     file_path_list.append(file.get('path'))
 
-        # Send All Files
-        for file_obj in files:
-            file = file_obj
+        # # Send all dropped Files
+        # file_request = {
+        #     'header': 'file',
+        #     'files': file_path_list,
+        #     'current_directory': current_directory,
+        #     'user': user
+        # }
+        # self.net_socket.send(file_request)
 
-            file_name = {
-                'header': 'file',
-                'name': file.get('name'),
-                'size': file.get('size'),
-                'current_directory': current_directory
-            }
+        # while True:
+        #     # Wait for file request
+        #     request = self.net_socket.response()
 
-            # Send File information
-            self.net_socket.send(file_name)
-            status = self.net_socket.response()
+        #     if request.get('file_path') == 'done':
+        #         break
 
-            # If the file was opened properly on the server, send the file bytes
-            if status.get('status') == 'ready':
+        #     opened_file = open(request.get('file_path'), 'rb')
 
-                opened_file = open(file.get('path'), 'rb')
+        #     self.net_socket.send_file(opened_file.read())
+        #     opened_file.close()
 
-                self.net_socket.send(opened_file.read())
 
-                response = self.net_socket.response()
 
-            else:
-                print("Server was unable to open", file.get('name'))
 
         return response
 

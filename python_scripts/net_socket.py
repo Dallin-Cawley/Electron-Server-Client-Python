@@ -19,10 +19,10 @@ class ClientSocket:
         # Make sure the size_body is the set length
         length = len(json.dumps(size_body).encode('UTF-8'))
         if length < 50:
-            buffer = ' '
+            buffer = ''
             while length < 50:
-                size_body.update({'buffer': buffer})
                 buffer += ' '
+                size_body.update({'buffer': buffer})
                 length = len(json.dumps(size_body).encode('UTF-8'))
 
         self.con_socket.sendall(json.dumps(size_body).encode('UTF-8'))
@@ -38,10 +38,10 @@ class ClientSocket:
         # Make sure the size_body is the set length
         length = len(json.dumps(size_body).encode('UTF-8'))
         if length < 50:
-            buffer = ' '
+            buffer = ''
             while length < 50:
-                size_body.update({'buffer': buffer})
                 buffer += ' '
+                size_body.update({'buffer': buffer})
                 length = len(json.dumps(size_body).encode('UTF-8'))
 
         self.con_socket.sendall(json.dumps(size_body).encode('UTF-8'))
@@ -49,7 +49,6 @@ class ClientSocket:
 
 
     def response(self):
-
         resp_size_bytes = bytes()
         while len(resp_size_bytes) < 50:
             resp_size_bytes += self.con_socket.recv(50)
@@ -71,6 +70,9 @@ class ServerSocket:
     def __init__(self, con_socket):
         self.con_socket = con_socket
 
+    def set_timeout(self, seconds):
+        self.con_socket.settimeout(seconds)
+
     def send(self, message):
         msg_json = json.dumps(message)
 
@@ -82,11 +84,12 @@ class ServerSocket:
         # Make sure the size_body is the set length
         length = len(json.dumps(size_body).encode('UTF-8'))
         if length < 50:
-            buffer = ' '
+            buffer = ''
             while length < 50:
+                buffer += ' '                
                 size_body.update({'buffer': buffer})
-                buffer += ' '
                 length = len(json.dumps(size_body).encode('UTF-8'))
+
 
         self.con_socket.sendall(json.dumps(size_body).encode('UTF-8'))
         self.con_socket.sendall(msg_json.encode('UTF-8'))
@@ -96,16 +99,12 @@ class ServerSocket:
         # Recieve the size of the request.
            # The server will remain in this loop until a request is given
         resp_size_bytes = bytes()
-        print("Before getting size body")
         while len(resp_size_bytes) < 50:
-            print("Waiting for size_body")
             resp_size_bytes += self.con_socket.recv(50)
 
         resp_size = json.loads(resp_size_bytes.decode('UTF-8'))
 
-
         message_size = resp_size.get('size')
-        print("Message size", message_size)
         message_bytes = bytes()
 
         while len(message_bytes) < message_size:
@@ -116,23 +115,18 @@ class ServerSocket:
 
     def recieve_file(self):
         # Recieve the size of the request.
-        # The server will remain in this loop until a request is given
+           # The server will remain in this loop until a request is given
         resp_size_bytes = bytes()
-        print("Before getting size body")
         while len(resp_size_bytes) < 50:
-            print("Waiting for size_body")
             resp_size_bytes += self.con_socket.recv(50)
 
         resp_size = json.loads(resp_size_bytes.decode('UTF-8'))
 
-
         message_size = resp_size.get('size')
-        print("Message size", message_size)
         message_bytes = bytes()
 
         while len(message_bytes) < message_size:
             message_bytes += self.con_socket.recv(message_size)
-
         return message_bytes
 
 

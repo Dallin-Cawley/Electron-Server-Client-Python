@@ -98,6 +98,7 @@ let user;
     PythonShell.run('python_scripts/client.py', options, function(err, results){
       if  (err)  throw err;
       response_body = JSON.parse(results[1]);
+      console.log("\nResponse body: ", response_body);
       response_body["user"] = user;
 
       window.webContents.send('file-names', response_body, user);

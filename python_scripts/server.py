@@ -88,6 +88,7 @@ def handle_client_connection(connection, base_dir):
             # Get request from client
             request_body = connection.request()
             request_body.update({'base_dir': base_dir})
+            print("\nRequest Body:", request_body, "\n")
 
             if request_body.get('header') == 'update':
                 print("Updating Shut_Down")
@@ -105,8 +106,6 @@ def handle_client_connection(connection, base_dir):
                 break
             
             response = request_handler.handle_request(header=header, request_body=request_body)
-            
-            print("Before sending second response", '\n')
             connection.send(response)
 
         except ValueError:

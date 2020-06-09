@@ -25,7 +25,6 @@ class ServerRequestHandlerSwitch:
 
     def handle_login(self, request_body):
         if request_body.get('username') in globals.users:
-            print('\nHashed password: ', security.encrypt_password(request_body.get('password')), '\n')
             if security.check_encrypted_password(request_body.get('password'),
                                                  globals.users.get(request_body.get('username')).get('password')):
                 user = globals.users.get(request_body.get('username')).get('user')
@@ -47,13 +46,15 @@ class ServerRequestHandlerSwitch:
         return body
         
 
-    def handle_directory(self, request_body):
+    def handle_upload(self, request_body):
         dropped_info = self.con_socket.request()
         directories = dropped_info.get('directories')
         files = dropped_info.get('files')
+        dir_files = dropped_info.get('dir_files')
         paste_dir = dropped_info.get('current_directory')
         base_dir = Path(request_body.get('base_dir'), paste_dir)
 
+        print("Directory files:", dir_files, "\n")
         # Create Directories if they don't already exist from sent list of directories
         directory_list = []
         try:
@@ -64,21 +65,18 @@ class ServerRequestHandlerSwitch:
                     if not os.path.exists(full_path):
                         os.mkdir(full_path)
                         directory_list.append(dir)
-
-        except TypeError as type_error:
-            print("There was an error creating directory")
-            print(type_error)
         except IOError as ioerror:
             error = "IOError: unable to create Directory....\n\t" + ioerror
             log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
         
         log.log_directory(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), directory_list=directory_list)
 
-        # Get files and save them to this machine
+        # Save Directory Files
         file_list = []
-        for file_key in files:
+        self.con_socket.set_timeout(5)
+        for file_key in dir_files:
             try:
-                file_info = files.get(file_key)
+                file_info = dir_files.get(file_key)
 
                 # Ask client for next file in list
                 file_request = {
@@ -88,17 +86,44 @@ class ServerRequestHandlerSwitch:
 
                 # Recieve the file bytes and write them
                 file_bytes = self.con_socket.recieve_file()
-                file = open(Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path')), 'wb')
-                file.write(file_bytes)
-                file.close()
+                opened_file = open(Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path')), 'wb')
+                opened_file.write(file_bytes)
+                opened_file.close()
                 file_list.append(file_info.get('file_sub_path'))
 
             except IOError as ioerror:
-                error = "There was an error saving file " + file_info.get('file_sub_path') + "\n\t" + ioerror
+                error = "There was an error saving file " + file_info.get('file_sub_path') + "\n\t" + "ERROR: " + str(ioerror) + "\n"
+                log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
+                continue
+
+        self.con_socket.set_timeout(None)
+
+        # Save Individual Files
+        for file in files:
+            try:
+                print("File:", file)
+                file_path = file.get('path')
+
+                # Ask client for next file in list
+                file_request = {
+                    'file': file_path
+                }
+                self.con_socket.send(file_request)
+
+                # Recieve the file bytes and write them
+                file_bytes = self.con_socket.recieve_file()
+                opened_file = open(Path(request_body.get('base_dir'), paste_dir, file.get('name')), 'wb')
+                opened_file.write(file_bytes)
+                opened_file.close()
+                file_list.append(file.get('name'))
+
+            except IOError as ioerror:
+                error = "There was an error saving file " + file.get('name') + "\n\t" + ioerror
                 log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
                 continue
 
         log.log_file(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), file_list=file_list)
+        
         # Inform client that all files have been saved
         self.con_socket.send({"file": 'done'})
 
@@ -164,31 +189,33 @@ class ServerRequestHandlerSwitch:
 
         return dict_of_dict_of_files
 
-    def handle_file(self, request_body):
-        client_connection = request_body.get('client_connection')
+    def handle_file(self, request_body):        
+        file_paths = request_body.get('files')
+        file_list = []
+        for file in file_paths:
+            try:
+                file_request = {
+                    'file_path': file
+                }
+                server_path = Path(request_body.get('base_dir'), request_body.get('user'), request_body.get('current_directory'), os.path.basename(file))
+
+                opened_file = open(server_path, 'wb')
+                self.con_socket.send(file_request)
+
+                opened_file.write(self.con_socket.recieve_file())
+                file_list.append(os.path.join(request_body.get('current_directory'), os.path.basename(file)))
+            except IOError as ioerror:
+                error = "There was an error saving file " + str(Path(request_body.get('current_directory'), os.path.basename(file))) + "\n\t" + ioerror
+                log.main_log(user=request_body.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
+                continue
+
+        self.con_socket.send({'file_path': 'done'})
+
+        log.log_file(user=request_body.get('user'), base_dir=request_body.get('base_dir'), file_list=file_list)
+
+        return self.get_current_directory_names(request_body=request_body)
+
         
-        try:
-            file_path = os.path.join(request_body.get('base_dir'), request_body.get('current_directory'), request_body.get('name'))
-            opened_file = open(file_path, 'wb')
-
-            client_connection.sendall(json.dumps({'status': 'ready'}).encode('UTF-8'))
-            opened_file.write(client_connection.recv(request_body.get('size')))
-            opened_file.close()
-
-            
-
-            final_body = {
-                'response': 'File Saved',
-                'updated_directories': self.get_current_directory_names(request_body=request_body)
-            }
-        except IOError:
-            final_body = {
-                'response': 'Unable to Save File'
-            }
-
-
-        # Send a confirmation to Client
-        return final_body
 
     def handle_new_user(self, request_body):
         hashed_password = security.encrypt_password(request_body.get('password'))
