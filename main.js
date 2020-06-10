@@ -124,7 +124,9 @@ let user;
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-      response_body['updated_directories'] = JSON.parse(results[1]);
+      py_result = JSON.parse(results[1])
+      response_body['updated_directories'] = py_result['updated_directories']
+      console.log("\nResults:", results, "\n")
 
       window.webContents.send('update-file-names', response_body);
     })
