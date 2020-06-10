@@ -46,21 +46,18 @@ class ClientRequestHandlerSwitch(object):
 
 
     def handle_delete(self, function_call_body):
-        client_socket = function_call_body.get('client_socket')
 
         body = {
             'header': 'delete',
-            'to_delete': json.loads(function_call_body.get(2)),
-            'current_directory': function_call_body.get(3)
+            'to_delete': json.loads(function_call_body.get(3)),
+            'current_directory': function_call_body.get(4)
         }
 
-        client_socket.sendall(json.dumps(body).encode('UTF-8'))
+        self.net_socket.send(body)
 
-        # recieve the updated directories size after sending
-        recieving_size = json.loads(client_socket.recv(1024).decode('UTF-8'))
 
         # return the updated directories
-        return json.loads(client_socket.recv(recieving_size.get('size')).decode('UTF-8'))
+        return self.net_socket.response()
 
 
     def handle_file_view(self, function_call_body):

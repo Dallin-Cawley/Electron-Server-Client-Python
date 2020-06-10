@@ -126,7 +126,6 @@ let user;
       if  (err) throw err;
       py_result = JSON.parse(results[1])
       response_body['updated_directories'] = py_result['updated_directories']
-      console.log("\nResults:", results, "\n")
 
       window.webContents.send('update-file-names', response_body);
     })
@@ -138,10 +137,11 @@ let user;
     options = {
       args:['delete', user, delete_list, current_directory]
     }
+    console.log()
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
-
+      console.log("\nDelete Results:", results, "\n")
       response_body = JSON.parse(results[1]);
 
       window.webContents.send('update-file-names', response_body);
