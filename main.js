@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, Menu} = require('electron');
+const {app, BrowserWindow, ipcMain, Menu, dialog, DownloadItem} = require('electron');
 let {PythonShell} = require('python-shell');
 let window;
 let user;
@@ -147,6 +147,44 @@ let user;
       window.webContents.send('update-file-names', response_body);
     })
   })
+
+  function downloadFiles(dialog_info, user, selected_files) {
+    if (dialog_info.canceled == true) {
+      window.webContents.send('no-directory-selected');
+    }
+    else {
+      directory = dialog_info.filePaths[0];
+    
+      for (i = 0; i < selected_files.length; i++) {
+        console.log("Iteration ", i);
+        options = {
+          args: ['download', user, selected_files[i], directory]
+        }
+
+        PythonShell.run('python_scripts/client.py', options, function(err, results) {     
+          if  (err) throw err;
+          console.log('\nresults: ', results); 
+
+          download_status = JSON.parse(results[1])
+          console.log("\nDownload Status:", download_status, '\n')
+          window.webContents.send('download-status', download_status)
+        })
+      }
+    }
+  }
+
+  ipcMain.on('download', (event, selected_files) => {
+    console.log("Downloading files:", selected_files);
+    let options = {
+        title: "Download Location",
+        buttonLabel: "Download",
+        properties: ['openDirectory']
+      };
+    
+    dialog.showOpenDialog(window, options).then(dialog_selection => {
+       downloadFiles(dialog_selection, user, selected_files) 
+      })
+    })
 
   ipcMain.on('rename-element', (event, rename_body) => {
     console.log("Rename body:", rename_body, '\n')

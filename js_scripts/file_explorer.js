@@ -1,6 +1,69 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
+const {dialog} = require('electron')
 const path = require('path');
+const remote = require('electron').remote;
+const Menu = remote.require('electron').Menu;
+const MenuItem = remote.require('electron').MenuItem;
+
+/**************************************************
+ * Save Dialog
+ *************************************************/
+ipcRenderer.on('no-directory-selected', function() {
+	alert("No Directory was selected. Please try again");
+})
+
+ipcRenderer.on('download-status', function(event, download_status) {
+	console.log("Download status:", download_status);
+	if (download_status.downloaded == true) {
+		message = "All files were saved."
+		alert(message);
+	}
+	else {
+		message = "The following files were NOT saved.....";
+		for (file in download_status.unsaved_files) {
+			message += "\n\t" + download_status.unsaved_files[file] + '\n'
+		}
+		alert(message);
+	}
+})
+
+/**********************************************
+ * Context Menu on Right Click
+ *********************************************/
+let rightClickPosition = null;
+
+const menu = new Menu();
+const inspect_element = new MenuItem({
+  label: 'Inspect Element',
+  click: () => {
+    remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y)
+  }
+});
+const download = new MenuItem({
+	label: 'Download',
+	click: () => {
+		if (program_state.selected_files.length > 0) {
+
+			ipcRenderer.send('download', program_state.selected_files);
+
+		}
+		else {
+			alert("Please select atleast one File or Directory");
+		}
+	}
+})
+
+
+menu.append(inspect_element);
+menu.append(download);
+
+window.addEventListener('contextmenu', (e) => {
+  e.preventDefault();
+  rightClickPosition = {x: e.x, y: e.y};
+  menu.popup(remote.getCurrentWindow());
+}, false);
+
 
 window.onload = get_file_names();
 var remote_directories;
@@ -177,8 +240,9 @@ ipcRenderer.on('update-file-names', function(event, response_body) {
 	// in file explorer is possible
 	for (dir_key in updated_directories) {
 		if (dir_key != program_state.user) {
-			parent_path = dir_key.replace(path.basename(dir_key), '');
+			parent_path = dir_key.substring(0, dir_key.lastIndexOf(path.basename(dir_key)));
 			parent_path = parent_path.slice(0, -1);
+			console.log("parent path", parent_path)
 		}
 		else {
 			parent_path = program_state.user;

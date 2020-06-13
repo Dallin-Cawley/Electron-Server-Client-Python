@@ -21,7 +21,7 @@ def main_log(user, base_dir, service_provided, logging_in = False):
     log_file.write(word)
 
 
-def log_directory(user, base_dir, directory_list):
+def log_directory_upload(user, base_dir, directory_list):
     file_name = user + ".txt"
     log_file = open(Path(base_dir, file_name), 'a')
 
@@ -35,7 +35,7 @@ def log_directory(user, base_dir, directory_list):
     log_file.write('\n')
     log_file.close()
 
-def log_file(user, base_dir, file_list):
+def log_file_upload(user, base_dir, file_list):
     file_name = user + ".txt"
     log_file = open(Path(base_dir, file_name), 'a')
 
@@ -48,3 +48,40 @@ def log_file(user, base_dir, file_list):
         
     log_file.write('\n')
     log_file.close()
+
+def log_directory_download(user, base_dir, directory_list, success=True):
+    if success == True:
+        word = "[ " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + " ]: " + "Sent the following directories for download...."
+    else:
+        word = "[ " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + " ]: " + "There was an error finding the following directories....."
+
+    file_name = user + ".txt"
+    log_file = open(Path(base_dir, file_name), 'a')
+
+    log_file.write(word)
+
+    for dir in directory_list:
+        word = "\n\t" + str(dir)
+        log_file.write(word)
+        
+    log_file.write('\n')
+    log_file.close()
+
+def log_file_download(user, base_dir, file_list, success=True):
+    if success == True:
+        word = "[ " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + " ]: " + "Sent the following files for download...."
+    else:
+        word = "[ " + datetime.now().strftime("%m/%d/%Y, %H:%M:%S") + " ]: " + "There was an error sending the following files for download...."
+
+    file_name = user + ".txt"
+    log_file = open(Path(base_dir, file_name), 'a')
+
+
+    log_file.write(word)
+
+    for file in file_list:
+        word = "\n\t" + str(file)
+        log_file.write(word)
+        
+    log_file.write('\n')
+    log_file.close()    

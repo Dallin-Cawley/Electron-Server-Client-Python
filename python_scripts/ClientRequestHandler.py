@@ -4,6 +4,7 @@ import json
 from sys import getsizeof
 from pathlib import Path
 from net_socket import ClientSocket
+from download import directory_download, file_download
 
 class ClientRequestHandlerSwitch(object):
     def __init__(self, client_socket):
@@ -59,6 +60,18 @@ class ClientRequestHandlerSwitch(object):
         # return the updated directories
         return self.net_socket.response()
 
+    def handle_download(self, function_call_body):
+        user = function_call_body.get(2)
+        item = function_call_body.get(3)
+        download_directory = function_call_body.get(4)
+
+        _, ext = os.path.splitext(item)
+
+        # Item is a directory to download
+        if not ext:
+            return directory_download(user, item, download_directory, self.net_socket)
+        else:
+            return file_download(user, item, download_directory, self.net_socket)
 
     def handle_file_view(self, function_call_body):
 
@@ -162,34 +175,6 @@ class ClientRequestHandlerSwitch(object):
                 return response
 
         response = self.net_socket.response()
-
-
-        # file_path_list = []
-        # for file in files:
-        #     file_path_list.append(file.get('path'))
-
-        # # Send all dropped Files
-        # file_request = {
-        #     'header': 'file',
-        #     'files': file_path_list,
-        #     'current_directory': current_directory,
-        #     'user': user
-        # }
-        # self.net_socket.send(file_request)
-
-        # while True:
-        #     # Wait for file request
-        #     request = self.net_socket.response()
-
-        #     if request.get('file_path') == 'done':
-        #         break
-
-        #     opened_file = open(request.get('file_path'), 'rb')
-
-        #     self.net_socket.send_file(opened_file.read())
-        #     opened_file.close()
-
-
 
 
         return response
