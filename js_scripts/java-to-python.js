@@ -1,22 +1,22 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
 
-const login_form = document.getElementById("login-form");
-login_form.addEventListener('submit', submitLoginForm);
+const loginForm = document.getElementById("login-form");
+loginForm.addEventListener('submit', submitLoginForm);
 
-const login_animation = document.getElementById("login_animation");
+const loginAnimation = document.getElementById("login_animation");
 
 function submitLoginForm(event) {
 	event.preventDefault();
-	const login_info = {
+	const loginInfo = {
 		username: document.getElementById('username').value,
 		password: document.getElementById('password').value
 	};
-	ipcRenderer.send('login_info', login_info);
+	ipcRenderer.send('login_info', loginInfo);
 
-	login_animation.style.display = "flex";
-	login_animation.style.justifyContent = "center";
-	login_animation.style.marginTop = "50px";
+	loginAnimation.style.display = "flex";
+	loginAnimation.style.justifyContent = "center";
+	loginAnimation.style.marginTop = "50px";
 
 }
 

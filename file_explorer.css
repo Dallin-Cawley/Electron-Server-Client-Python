@@ -2,10 +2,19 @@
 	border: 3px solid #000000;
 }
 
-.div-grid-layout {
+.div-lower-window-layout {
 	display: grid;
 	grid-template-columns: 30% 70%;
-	grid-template-rows: 800px;
+}
+
+.div-file-window-layout {
+	display: grid;
+	grid-template-rows: 50px 525px;
+}
+
+.div-upper-window-layout {
+	display: grid;
+	grid-template-columns: 20% 60% 20%;
 }
 
 li {

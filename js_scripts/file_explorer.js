@@ -6,6 +6,69 @@ const remote = require('electron').remote;
 const Menu = remote.require('electron').Menu;
 const MenuItem = remote.require('electron').MenuItem;
 
+var remoteDirectories;
+var programState = {
+	'currentDirectory': null,
+	'previousDirectory': null,
+	'showDir': null,
+	'selectedFiles': [],
+	'recentSelection': null,
+	'user': null
+}
+
+window.onload = startUp();
+document.addEventListener("keydown", handleKeyDown);
+
+function startUp() {
+	ipcRenderer.send('get-file-names')
+}
+
+function iconSizeUpdate(event) {
+	let ul = document.getElementById('file-name-list')
+	let liList = ul.getElementsByTagName('li');
+
+	let selection = event.currentTarget.id.toString();
+	
+	if (selection == 'icon-small') {
+		divHeight = '15px';
+		divWidth = '75px';
+		fontSize = 'medium';
+
+		imgHeight = '75px';
+		imgWidth = '75px';
+	}
+	else if (selection == 'icon-medium') {
+		divHeight = '20px';
+		divWidth = '100px';
+		fontSize = 'large';
+
+		imgHeight = '100px';
+		imgWidth = '100px';
+	}
+	else if (selection == 'icon-large') {
+		divHeight = '25px';
+		divWidth = '125px';
+		fontSize = 'x-large';
+
+		imgHeight = '125px';
+		imgWidth = '125px';
+	}
+
+	for (i = 0; i < liList.length; i++) {
+		let li = liList[i];
+		let divChild = li.firstChild;
+		let imgChild = li.lastChild;
+
+		divChild.style.height = divHeight;
+		divChild.style.width = divWidth;
+		divChild.style.fontSize = fontSize;
+
+		imgChild.style.height = imgHeight;
+		imgChild.style.width = imgWidth;
+	}
+}
+
+
 /**************************************************
  * Save Dialog
  *************************************************/
@@ -13,16 +76,15 @@ ipcRenderer.on('no-directory-selected', function() {
 	alert("No Directory was selected. Please try again");
 })
 
-ipcRenderer.on('download-status', function(event, download_status) {
-	console.log("Download status:", download_status);
-	if (download_status.downloaded == true) {
+ipcRenderer.on('download-status', function(event, downloadStatus) {
+	if (downloadStatus.downloaded == true) {
 		message = "All files were saved."
 		alert(message);
 	}
 	else {
 		message = "The following files were NOT saved.....";
-		for (file in download_status.unsaved_files) {
-			message += "\n\t" + download_status.unsaved_files[file] + '\n'
+		for (file in downloadStatus.unsaved_files) {
+			message += "\n\t" + downloadStatus.unsaved_files[file] + '\n'
 		}
 		alert(message);
 	}
@@ -34,7 +96,7 @@ ipcRenderer.on('download-status', function(event, download_status) {
 let rightClickPosition = null;
 
 const menu = new Menu();
-const inspect_element = new MenuItem({
+const inspectElement = new MenuItem({
   label: 'Inspect Element',
   click: () => {
     remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y)
@@ -43,9 +105,8 @@ const inspect_element = new MenuItem({
 const download = new MenuItem({
 	label: 'Download',
 	click: () => {
-		if (program_state.selected_files.length > 0) {
-
-			ipcRenderer.send('download', program_state.selected_files);
+		if (programState.selectedFiles.length > 0) {
+			ipcRenderer.send('download', programState.selectedFiles);
 
 		}
 		else {
@@ -55,7 +116,7 @@ const download = new MenuItem({
 })
 
 
-menu.append(inspect_element);
+menu.append(inspectElement);
 menu.append(download);
 
 window.addEventListener('contextmenu', (e) => {
@@ -65,76 +126,65 @@ window.addEventListener('contextmenu', (e) => {
 }, false);
 
 
-window.onload = get_file_names();
-var remote_directories;
-
-var program_state = {
-	'current_directory': null,
-	'previous_directory': null,
-	'show_dir': null,
-	'selected_files': [],
-	'recent_selection': null,
-	'user': null
-}
-
-document.addEventListener("keydown", handleKeyDown);
-
-function get_file_names() {
-    ipcRenderer.send('get-file-names')
-}
-
-
-function create_li_elements(file_body) {
-	let directory = file_body.directory;
+/**********************************************
+ * <li> Elements
+ *********************************************/
+function createLiElements(fileBody) {
+	let directory = fileBody.directory;
 
 	// Prepare local variables for repeated use in loop
 	let ul = document.getElementById("file-name-list");
-	let image_src = file_body.image;
-	let file_list = file_body.to_display;
+	let imageSrc = fileBody.image;
+	let fileList = fileBody.to_display;
 
 	//Begin dynamically creating the list of files
-	for (file_index in file_list){
+	for (fileIndex in fileList){
 
 		//Create <li> element
-		let li_node = document.createElement("li");
-		let text = document.createTextNode(file_list[file_index]);
+		let liNode = document.createElement("li");
+		liNode.style.height = "auto";
+		liNode.style.width = "auto";
+		let text = document.createTextNode(fileList[fileIndex]);
 		
-		let div_node = document.createElement("div")
-		div_node.appendChild(text);
-		div_node.id = 'div_' + file_list[file_index];
+		let divNode = document.createElement("div")
+		divNode.appendChild(text);
+		divNode.id = 'div_' + fileList[fileIndex];
+		divNode.style.height = "20px";
+		divNode.style.width = "100px";
 		
-		li_node.id = file_list[file_index];
+		liNode.id = fileList[fileIndex];
 		
 		//Create and adjust image
-		let image = document.createElement("IMG");
-		image.id = file_list[file_index];
-		image.setAttribute('src', image_src);
-		image.width = "100";
-		image.height = "100";
+		let image = document.createElement("img");
+		image.id = fileList[fileIndex];
+		image.setAttribute('src', imageSrc);
+		image.style.width = "100px";
+		image.style.height = "100px";
 
-		li_node.appendChild(div_node);
-		li_node.appendChild(image);
+		liNode.appendChild(divNode);
+		liNode.appendChild(image);
 
 		/*********************************
 		Create events for all <li> nodes
 		*********************************/
 		//Drag Events
-		li_node.ondragstart = (event) => {
+		liNode.ondragstart = (event) => {
 		   	event.preventDefault();
 			event.stopPropagation();
 			
-			if (program_state.selected_files.length > 0) {
-				ipcRenderer.send('ondragstart', program_state.selected_files);
+			if (programState.selectedFiles.length > 0) {
+				ipcRenderer.send('ondragstart', programState.selectedFiles);
 			}
 		}
 
-		div_node.addEventListener('keydown', editableInputChange)
+		divNode.addEventListener('keydown', editableInputChange)
 
 		//On Click or on Click if selected
-		li_node.onclick = (event) => {
-			selected_item = path.join(program_state.current_directory, event.target.id);
-			if (program_state.selected_files.includes(selected_item) && program_state.selected_files.length == 1) {
+		liNode.onclick = (event) => {
+			let selectedItem = path.join(programState.currentDirectory, event.target.id);
+			if (programState.selectedFiles.includes(selectedItem) && programState.selectedFiles.length == 1) {
 				renameItem(event);
+				liOnClick(event);
 			}
 			else {
 				liOnClick(event);
@@ -147,147 +197,150 @@ function create_li_elements(file_body) {
 		 * ********************************/
 		if (directory == true){
 			//OnDrop events
-			li_node.ondrop = (event) => {
+			liNode.ondrop = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
 				
 				//Get path of where the file is being moved to
-		    	let drop_dir_name = path.join(program_state.current_directory, event.target.id);
-		    	let end_location = remote_directories[drop_dir_name].path;
+		    	let dropDirName = path.join(programState.currentDirectory, event.target.id);
+		    	let endLocation = remoteDirectories[dropDirName].path;
 
 		    	//Get path of files to move
-		    	let files_to_send_path = [];
-		    	let event_files_length = event.dataTransfer.files.length;
-		    	let event_files = event.dataTransfer.files;
+		    	let filesToSendPath = [];
+		    	let eventFilesLength = event.dataTransfer.files.length;
+		    	let eventFiles = event.dataTransfer.files;
 
-		    	for (let i = 0; i < event_files_length; i++){
-		    		files_to_send_path.push(event_files[i].path);
+		    	for (let i = 0; i < eventFilesLength; i++){
+		    		filesToSendPath.push(eventFiles[i].path);
 		    	}
 
-		    	drop_body = {
-		    		'sending_to': end_location,
-		    		'files_to_send': files_to_send_path
+		    	dropBody = {
+		    		'sending_to': endLocation,
+		    		'files_to_send': filesToSendPath
 		    	}
 
-		    	ipcRenderer.send('ondrop', JSON.stringify(drop_body));
+		    	ipcRenderer.send('ondrop', JSON.stringify(dropBody));
 
 			}
 
 			//Hover Events
-			li_node.ondragover = (event) => {
+			liNode.ondragover = (event) => {
 		   		event.preventDefault();
 		   		event.stopPropagation();
 				event.currentTarget.style.backgroundColor = 'blue';
 	   		}
 
 	   		//Hover End Events
-	   		li_node.ondragleave = (event) => {
+	   		liNode.ondragleave = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
 				event.currentTarget.style.backgroundColor = '#99badd';
 			}
 
 			//Double Click Event
-			li_node.ondblclick = (event) => {
+			liNode.ondblclick = (event) => {
 				showDirOnEvent(event);
 			}
 		}
 
 		//Add it to <ul id="file-name-list">
-		ul.appendChild(li_node);
+		ul.appendChild(liNode);
 	}
 }
 
+
+/**********************************************
+ * ipcRenderere.on() events
+ *********************************************/
+
 //file-names is thrown after a successful login to localize and display
 //directory and file names.
-ipcRenderer.on('file-names', function(event, directory_info, user){
+ipcRenderer.on('file-names', function(event, directoryInfo, user){
 
 	//Localize these variables for future use;
-	remote_directories = directory_info;
-	program_state.user = user;
-	program_state.current_directory = user
+	remoteDirectories = directoryInfo;
+	programState.user = user;
+	programState.currentDirectory = user
 
-	update_file_paths()
+	updateFilePaths()
 
 	//Create Directories as <li>
-	file_body = {
+	fileBody = {
 		'directory': true,
-		'to_display': directory_info[program_state.user].sub_directories,
+		'to_display': directoryInfo[programState.user].sub_directories,
 		'image': 'images/file_folder.png'
 	}
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 
 	//Create Files as <li>
-	file_body['directory'] = false;
-	file_body['to_display'] = directory_info[program_state.user].file_names;
-	file_body['image'] = 'images/txt-file-icon.png'
+	fileBody['directory'] = false;
+	fileBody['to_display'] = directoryInfo[programState.user].file_names;
+	fileBody['image'] = 'images/txt-file-icon.png'
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 })
 
 
-ipcRenderer.on('update-file-names', function(event, response_body) {
-	console.log("Response body:", response_body);
-	updated_directories = response_body["updated_directories"];
-	console.log("updated_directories", updated_directories);
+ipcRenderer.on('update-file-names', function(event, responseBody) {
+	let updatedDirectories = responseBody["updated_directories"];
 
-	if (typeof updated_directories == 'string') {
-		updated_directories = JSON.parse(updated_directories);
+	if (typeof updatedDirectories == 'string') {
+		updatedDirectories = JSON.parse(updatedDirectories);
 	}
 
 	// Set the parent_directory of each directory so that back navigation 
 	// in file explorer is possible
-	for (dir_key in updated_directories) {
-		if (dir_key != program_state.user) {
-			parent_path = dir_key.substring(0, dir_key.lastIndexOf(path.basename(dir_key)));
-			parent_path = parent_path.slice(0, -1);
-			console.log("parent path", parent_path)
+	for (dirKey in updatedDirectories) {
+		if (dirKey != programState.user) {
+			parentPath = dirKey.substring(0, dirKey.lastIndexOf(path.basename(dirKey)));
+			parentPath = parentPath.slice(0, -1);
 		}
 		else {
-			parent_path = program_state.user;
+			parentPath = programState.user;
 		}
-		updated_directories[dir_key]["parent_directory"] = parent_path;
-		remote_directories[dir_key] = updated_directories[dir_key];
+		updatedDirectories[dirKey]["parent_directory"] = parentPath;
+		remoteDirectories[dirKey] = updatedDirectories[dirKey];
 	}
 
-	if (program_state.show_dir == true){
+	if (programState.showDir == true){
 		showDir();
-		program_state.show_dir = false;
+		programState.showDir = false;
 	}
 
 })
 
+
+/**********************************************
+ * Extra necessary functions
+ *********************************************/
+
 //Add all files with their current location to the global
 //remote_directories for easy use when dragging and dropping
-function update_file_paths() {
-	let i = 0
-	for (directory in remote_directories) {
+function updateFilePaths() {
+	for (directory in remoteDirectories) {
 		if (directory == 'user') {
 			break;
 		}
-		else if (directory == program_state.base_path) {
-			i++;
-		}
 
 		//For easy access to file paths later
-		for (file_index in remote_directories[directory].file_names){
+		for (fileIndex in remoteDirectories[directory].file_names){
 			
-			let file = remote_directories[directory].file_names[file_index];
-			let file_path = path.join(remote_directories[directory].path, file);
+			let file = remoteDirectories[directory].file_names[fileIndex];
+			let filePath = path.join(remoteDirectories[directory].path, file);
 
-			remote_directories[file_path] = {
-				'path': file_path
+			remoteDirectories[filePath] = {
+				'path': filePath
 			}
 		}
 		//For easy access to parent directories later
-		let sub_directory_list = remote_directories[directory].sub_directories;
+		let subDirectoryList = remoteDirectories[directory].sub_directories;
 		
-		if (sub_directory_list != null) {
-			if (sub_directory_list.length > 0) {
-				for (i = 0; i < sub_directory_list.length; i++) {
-					sub_dir_index = path.join(directory, sub_directory_list[i]);
-					remote_directories[sub_dir_index].parent_directory = directory;
+		if (subDirectoryList != null) {
+			if (subDirectoryList.length > 0) {
+				for (i = 0; i < subDirectoryList.length; i++) {
+					subDirIndex = path.join(directory, subDirectoryList[i]);
+					remoteDirectories[subDirIndex].parent_directory = directory;
 				}
 			}
 		}
@@ -298,103 +351,97 @@ function liOnClick(event) {
 	event.preventDefault();
 	event.stopPropagation();
 
-	if (event.target.contentEditable == "true") {
-		return;
-	}
-
 	if (event.shiftKey == true) {
 
-		if (program_state.selected_files.length > 0) {
+		if (programState.selectedFiles.length > 0) {
 
 			let ul = document.getElementById('file-name-list');
-			let li_list = ul.getElementsByTagName('li');
+			let liList = ul.getElementsByTagName('li');
 
 			let first = false;
-			for (i = 0; i < li_list.length; i++) {
-				if (first == true && (program_state.recent_selection == li_list[i].id || event.target.id == li_list[i])) {
+			for (i = 0; i < liList.length; i++) {
+				if (first == true && (programState.recentSelection == liList[i].id || event.target.id == liList[i])) {
 					first = false;
 				}
-				else if ((program_state.recent_selection == li_list[i].id || event.target.id == li_list[i]) && first == false) {
+				else if ((programState.recentSelection == liList[i].id || event.target.id == liList[i]) && first == false) {
 					first = true;
 				}
 
 				if (first == true) {
-					li_list[i].style.backgroundColor = '#4863A0'
-					program_state.selected_files.push(path.join(program_state.current_directory, li_list[i].id));
+					liList[i].style.backgroundColor = '#4863A0'
+					programState.selectedFiles.push(path.join(programState.currentDirectory, liList[i].id));
 				}
 				else {
-					li_list[i].style.backgroundColor = '#99badd';
+					liList[i].style.backgroundColor = '#99badd';
 				}
 			}
 		}
 		else {
 
 			//Set currently selected items back to default background color
-			for (i = 0; i < program_state.selected_files.length; i++){
-				let { dir, name, ext } = path.parse(program_state.selected_files[i]);
+			for (i = 0; i < programState.selectedFiles.length; i++){
+				let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
 				document.getElementById(name + ext).style.backgroundColor = '#99badd';
 			}
 
 			//Clear selected files so only one can be selected at a time unless shift or control
 			//is clicked.
-			program_state.selected_files.length = 0;
+			programState.selectedFiles.length = 0;
 
 			//set selected item's background color.
 			event.currentTarget.style.backgroundColor = '#4863A0';
-			program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
-			program_state.recent_selection = event.target.id;
+			programState.selectedFiles.push(path.join(programState.currentDirectory, event.target.id));
+			programState.recentSelection = event.target.id;
 			
 		}
 
 	}
 	else if (event.ctrlKey == true) {
-		program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
+		programState.selectedFiles.push(path.join(programState.currentDirectory, event.target.id));
 		event.currentTarget.style.backgroundColor = '#4863A0';
-		program_state.recent_selection = event.target.id;
+		programState.recentSelection = event.target.id;
 	}
 	else {
-		console.log("Selected Files:", program_state.selected_files);
 		//Set currently selected items back to default background color
-		for (i = 0; i < program_state.selected_files.length; i++){
-			let { dir, name, ext } = path.parse(program_state.selected_files[i]);
-			console.log("Name + ext:", name + ext);
+		for (i = 0; i < programState.selectedFiles.length; i++){
+			let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
 			document.getElementById(name + ext).style.backgroundColor = '#99badd';
 		}
 
 		//Clear selected files so only one can be selected at a time unless shift or control
 		//is clicked.
-		program_state.selected_files.length = 0;
+		programState.selectedFiles.length = 0;
 
 		//set selected item's background color.
 		event.currentTarget.style.backgroundColor = '#4863A0';
-		program_state.selected_files.push(path.join(program_state.current_directory, event.target.id));
-		program_state.recent_selection = event.target.id;
+		programState.selectedFiles.push(path.join(programState.currentDirectory, event.target.id));
+		programState.recentSelection = event.target.id;
 	}
 }
 
 
 //Change the name of a File or Directory
 function renameItem(event) {
-	li_id = event.target.id.replace("div_", '');
-	li_child_list = document.getElementById(li_id).childNodes;
-	li_item = 0;
+	let liId = event.target.id.replace("div_", '');
+	let liChildList = document.getElementById(liId).childNodes;
+	let liItem = 0;
 
 	//Find the div element
-	for (i = 0; i < li_child_list.length; i++) {
+	for (i = 0; i < liChildList.length; i++) {
 
-		if (li_child_list[i].tagName == "DIV") {
-			li_item = li_child_list[i];
+		if (liChildList[i].tagName == "DIV") {
+			liItem = liChildList[i];
 			break;
 		}
 	}
 
-	if (li_item == 0) {
+	if (liItem == 0) {
 		console.log("Div element for", event.target.id, "not found.");
 		return;
 	}
 	
 	//div element was found. Allow it to be edited.
-	li_item.contentEditable = "true";
+	liItem.contentEditable = "true";
 
 }
 
@@ -404,12 +451,12 @@ function editableInputChange(event) {
 	if (event.keyCode == 13) {
 		//Prevent the return character
 		event.preventDefault();
-		rename_body = {
-			'old_name': program_state.selected_files[0],
+		let renameBody = {
+			'old_name': programState.selectedFiles[0],
 			'new_name': event.target.textContent
 		}
 		document.getElementById(event.target.id).contentEditable = 'false';
-		ipcRenderer.send('rename-element', JSON.stringify(rename_body));
+		ipcRenderer.send('rename-element', JSON.stringify(renameBody));
 	}
 }
 
@@ -417,60 +464,58 @@ function editableInputChange(event) {
 function fileWindowClick(event) {
 
 	//Set currently selected items back to default background color
-	for (i = 0; i < program_state.selected_files.length; i++){
-		let { dir, name, ext } = path.parse(program_state.selected_files[i]);
+	for (i = 0; i < programState.selectedFiles.length; i++){
+		let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
 		document.getElementById(name + ext).style.backgroundColor = '#99badd';
 	}
 
-	program_state.selected_files.length = 0;
-	program_state.recent_selection = null;
+	programState.selectedFiles.length = 0;
+	programState.recentSelection = null;
 }
 
 
 function droppedInWindow(event) {
 	//Get a list of all items dropped into window
-	dropped_items = event.dataTransfer.files
+	let droppedItems = event.dataTransfer.files
 
 	//Used to hold directory and file names seperately
 	directories = [];
 	files = [];
 
 	//Check to see which are files and which are directories
-	for (i = 0; i < dropped_items.length; i++) {
-		item = dropped_items[i];
+	for (i = 0; i < droppedItems.length; i++) {
+		item = droppedItems[i];
 		
 		if (item.type == '') {  //Item is a directory
 
-			directory_info = {
+			let directoryInfo = {
 				'name': item.name,
 				'path': item.path,
 				'size': item.size,
 			}
-		   directories.push(directory_info)
+		   directories.push(directoryInfo)
 		}
 		else {   //Item is a file
 
-			file_info = {
+			let fileInfo = {
 				'name': item.name,
 				'path': item.path,
 				'size': item.size,
 				'type': item.type
 			}
-			files.push(file_info)
+			files.push(fileInfo)
 		}
 	}
 
-	dropped_items = {
+	droppedItems = {
 		'files': files,
 		'directories': directories,
-		'current_directory': program_state.current_directory
+		'current_directory': programState.currentDirectory
 	}
-
-	console.log("Dropped Items", dropped_items)
 	   
-	program_state.show_dir = true;
+	programState.showDir = true;
 	event.currentTarget.style.backgroundColor = '#99badd';
-   	ipcRenderer.send('ondrop', JSON.stringify(dropped_items));
+   	ipcRenderer.send('ondrop', JSON.stringify(droppedItems));
 }
 
 function draggedOverWindow(event) {
@@ -490,42 +535,42 @@ function showDirOnEvent(event) {
 	event.stopPropagation();
 
 	//Get the abs path of selected Directory
-	let selection_path = path.join(program_state.current_directory, event.target.id);
-	let selected_directory = remote_directories[selection_path];
+	let selectionPath = path.join(programState.currentDirectory, event.target.id);
+	let selectedDirectory = remoteDirectories[selectionPath];
 
-	if (selected_directory == null){
+	if (selectedDirectory == null){
 		alert("Unable to find selection.")
 		return false;
 	}
 
 	//Remove current <li> elements
-	file_list_ul = document.getElementById("file-name-list");
+	let fileListUl = document.getElementById("file-name-list");
 
-	while(file_list_ul.firstChild) {
-		file_list_ul.removeChild(file_list_ul.lastChild);
+	while(fileListUl.firstChild) {
+		fileListUl.removeChild(fileListUl.lastChild);
 	}
 
 	//Create Directories as <li>
-	file_body = {
+	let fileBody = {
 		'directory': true,
-		'to_display': selected_directory.sub_directories,
+		'to_display': selectedDirectory.sub_directories,
 		'image': 'images/file_folder.png'
 	}
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 
 	//Create Files as <li>
-	file_body['directory'] = false;
-	file_body['to_display'] = selected_directory.file_names;
-	file_body['image'] = 'images/txt-file-icon.png'
+	fileBody['directory'] = false;
+	fileBody['to_display'] = selectedDirectory.file_names;
+	fileBody['image'] = 'images/txt-file-icon.png'
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 
 	//Update program state
-	program_state.current_directory = selection_path;
-	program_state.previous_directory = remote_directories[selection_path].parent_directory;
-	program_state.selected_files.length = 0;
-	program_state.recent_selection = null;
+	programState.currentDirectory = selectionPath;
+	programState.previousDirectory = remoteDirectories[selectionPath].parent_directory;
+	programState.selectedFiles.length = 0;
+	programState.recentSelection = null;
 
 }
 
@@ -533,32 +578,32 @@ function showDirOnEvent(event) {
 function showDir() {
 
 	//Remove current <li> elements
-	file_list_ul = document.getElementById("file-name-list");
+	let fileListUl = document.getElementById("file-name-list");
 
-	while(file_list_ul.firstChild) {
-		file_list_ul.removeChild(file_list_ul.lastChild);
+	while(fileListUl.firstChild) {
+		fileListUl.removeChild(fileListUl.lastChild);
 	}
 
 	//Create Directories as <li>
-	selected_directory = remote_directories[program_state.current_directory];
-	file_body = {
+	let selectedDirectory = remoteDirectories[programState.currentDirectory];
+	let fileBody = {
 		'directory': true,
-		'to_display': selected_directory.sub_directories,
+		'to_display': selectedDirectory.sub_directories,
 		'image': 'images/file_folder.png'
 	}
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 
 	//Create Files as <li>
-	file_body['directory'] = false;
-	file_body['to_display'] = selected_directory.file_names;
-	file_body['image'] = 'images/txt-file-icon.png'
+	fileBody['directory'] = false;
+	fileBody['to_display'] = selectedDirectory.file_names;
+	fileBody['image'] = 'images/txt-file-icon.png'
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 
 	//Update program state
-	program_state.selected_files.length = 0;
-	program_state.recent_selection = null;
+	programState.selectedFiles.length = 0;
+	programState.recentSelection = null;
 }
 
 function handleKeyDown(event) {
@@ -573,47 +618,46 @@ function handleKeyDown(event) {
 }
 
 function deleteFileDir(event){
-	program_state.show_dir = true;
-	ipcRenderer.send('delete-file-dir', JSON.stringify(program_state.selected_files), program_state.current_directory);
+	programState.showDir = true;
+	ipcRenderer.send('delete-file-dir', JSON.stringify(programState.selectedFiles), programState.currentDirectory);
 }
 
 function showPrevDir(event) {
 
 	//If we are as far back as is allowed, don't do anything
-    if (program_state.current_directory == program_state.user) {
+    if (programState.currentDirectory == programState.user) {
     	return false;
     }
     	
-	selected_directory = remote_directories[program_state.previous_directory];
+	let selectedDirectory = remoteDirectories[programState.previousDirectory];
 		
 	//Remove current <li> elements
-	file_list_ul = document.getElementById("file-name-list");
+	let fileListUl = document.getElementById("file-name-list");
 
-	while(file_list_ul.firstChild) {
-		file_list_ul.removeChild(file_list_ul.lastChild);
+	while(fileListUl.firstChild) {
+		fileListUl.removeChild(fileListUl.lastChild);
 	}
 
-	console.log("selected_Directory: ", selected_directory)
 	//Create Directories as <li>
-	file_body = {
+	let fileBody = {
 		'directory': true,
-		'to_display': selected_directory.sub_directories,
+		'to_display': selectedDirectory.sub_directories,
 		'image': 'images/file_folder.png'
 	}
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 
 	//Create Files as <li>
-	file_body['directory'] = false;
-	file_body['to_display'] = selected_directory.file_names;
-	file_body['image'] = 'images/txt-file-icon.png'
+	fileBody['directory'] = false;
+	fileBody['to_display'] = selectedDirectory.file_names;
+	fileBody['image'] = 'images/txt-file-icon.png'
 
-	create_li_elements(file_body);
+	createLiElements(fileBody);
 
 	//Update program state
-	program_state.current_directory = program_state.previous_directory;
-	program_state.previous_directory = remote_directories[program_state.current_directory].parent_directory;
-	program_state.selected_files.length = 0;
-	program_state.recent_selection = null;
+	programState.currentDirectory = programState.previousDirectory;
+	programState.previousDirectory = remoteDirectories[programState.currentDirectory].parent_directory;
+	programState.selectedFiles.length = 0;
+	programState.recentSelection = null;
 
 };
