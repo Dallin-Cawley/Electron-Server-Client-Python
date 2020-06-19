@@ -17,6 +17,16 @@
 	grid-template-columns: 20% 60% 20%;
 }
 
+.dropdown-layout {
+	position: relative;
+	display: inline-block;
+}
+
+.grid-two-column {
+	display: grid;
+	grid-template-columns: 70% 30%;
+}
+
 li {
 	display: grid;
 	grid-template-columns: auto;
@@ -30,4 +40,32 @@ ul.file-folder {
 	list-style-type: none;
 	text-align: center; 
 	display: inline;
+}
+
+.dropdown-arrow {
+	height: 10px;
+	width: 10px;
+
+	border: solid;
+	border-radius: 3px;
+	border-width: 0px 3px 3px 0px;
+	border-color: white;
+
+	transition: 500ms;
+	transform: rotate(45deg);
+
+	margin-left: 5px;
+	margin-top: 6px;
+}
+
+.icon-size-content {
+	opacity: 0;
+	position: absolute;
+	background-color: #f1f1f1;
+	min-width: 150px;
+	
+	transition: opacity 500ms;
+
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+	z-index: 1;
 }

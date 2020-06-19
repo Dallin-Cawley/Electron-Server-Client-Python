@@ -13,7 +13,8 @@ var programState = {
 	'showDir': null,
 	'selectedFiles': [],
 	'recentSelection': null,
-	'user': null
+	'user': null,
+	'iconSize': {}
 }
 
 window.onload = startUp();
@@ -21,37 +22,58 @@ document.addEventListener("keydown", handleKeyDown);
 
 function startUp() {
 	ipcRenderer.send('get-file-names')
+	dropdownSizeDIV = document.getElementById('icon-size');
+	dropdownSizeDIV.innerHTML = "Medium";
+
+	programState.iconSize['imgWidth'] = '100px';
+	programState.iconSize['imgHeight'] = '100px';
+	programState.iconSize['fontSize'] = 'medium';
+}
+
+function showDropDown(event) {
+	dropdownContentDIV = document.getElementById('icon-size-content');
+	dropdownContentDIV.style.opacity = "100%";
+
+	dropdownArrow = document.getElementById('dropdown-arrow');
+	dropdownArrow.style.transform = "rotate(-135deg)";
+}
+
+function hideDropDown() {
+	dropdownContentDIV = document.getElementById('icon-size-content');
+	dropdownContentDIV.style.opacity = "0";
+
+	dropdownArrow = document.getElementById('dropdown-arrow');
+	dropdownArrow.style.transform = "rotate(45deg)";
 }
 
 function iconSizeUpdate(event) {
 	let ul = document.getElementById('file-name-list')
 	let liList = ul.getElementsByTagName('li');
+	dropdownSizeDIV = document.getElementById('icon-size')
 
 	let selection = event.currentTarget.id.toString();
 	
 	if (selection == 'icon-small') {
-		divHeight = '15px';
-		divWidth = '75px';
-		fontSize = 'medium';
+		programState.iconSize.fontSize = 'small';
 
-		imgHeight = '75px';
-		imgWidth = '75px';
+		programState.iconSize.imgHeight = '75px';
+		programState.iconSize.imgWidth = '75px';
+		dropdownSizeDIV.innerHTML = "Small";
 	}
 	else if (selection == 'icon-medium') {
-		divHeight = '20px';
-		divWidth = '100px';
-		fontSize = 'large';
+		programState.iconSize.fontSize = 'medium';
 
-		imgHeight = '100px';
-		imgWidth = '100px';
+		programState.iconSize.imgHeight = '100px';
+		programState.iconSize.imgWidth = '100px';
+		dropdownSizeDIV.innerHTML = "Medium";
 	}
 	else if (selection == 'icon-large') {
-		divHeight = '25px';
-		divWidth = '125px';
-		fontSize = 'x-large';
+		programState.iconSize.fontSize = 'large';
 
-		imgHeight = '125px';
-		imgWidth = '125px';
+		programState.iconSize.imgHeight = '125px';
+		programState.iconSize.imgWidth = '125px';
+
+		dropdownSizeDIV.innerHTML = "Large";
 	}
 
 	for (i = 0; i < liList.length; i++) {
@@ -59,13 +81,14 @@ function iconSizeUpdate(event) {
 		let divChild = li.firstChild;
 		let imgChild = li.lastChild;
 
-		divChild.style.height = divHeight;
-		divChild.style.width = divWidth;
-		divChild.style.fontSize = fontSize;
+		divChild.style.fontSize = programState.iconSize.fontSize;
+		divChild.style.width = programState.iconSize.imgWidth;
 
-		imgChild.style.height = imgHeight;
-		imgChild.style.width = imgWidth;
+		imgChild.style.height = programState.iconSize.imgHeight;
+		imgChild.style.width = programState.iconSize.imgWidth;
 	}
+
+	hideDropDown();
 }
 
 
@@ -149,8 +172,9 @@ function createLiElements(fileBody) {
 		let divNode = document.createElement("div")
 		divNode.appendChild(text);
 		divNode.id = 'div_' + fileList[fileIndex];
-		divNode.style.height = "20px";
-		divNode.style.width = "100px";
+		divNode.style.height = "auto";
+		divNode.style.width = programState.iconSize.imgWidth;
+		divNode.style.fontSize = programState.iconSize.fontSize;
 		
 		liNode.id = fileList[fileIndex];
 		
@@ -158,8 +182,9 @@ function createLiElements(fileBody) {
 		let image = document.createElement("img");
 		image.id = fileList[fileIndex];
 		image.setAttribute('src', imageSrc);
-		image.style.width = "100px";
-		image.style.height = "100px";
+		image.style.width = programState.iconSize.imgWidth;
+		image.style.height = programState.iconSize.imgHeight;
+		image.style.margin = "auto";
 
 		liNode.appendChild(divNode);
 		liNode.appendChild(image);

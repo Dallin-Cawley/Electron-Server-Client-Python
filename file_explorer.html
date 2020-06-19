@@ -30,17 +30,29 @@
           <div>
             <h3> Upper Column 2</h3>
           </div>
-          <div class="icon-size-dropdown">
-            <div onclick="iconSizeUpdate(event)" id="icon-small">
-              <p>Small</p>
+
+          <!--- Icon size dropdown -->
+          <div class="icon-size-dropdown dropdown-layout">
+            <div class="grid-two-column">
+              <div id="icon-size"></div>
+              <div id="dropdown-arrow" class="dropdown-arrow" onclick="showDropDown(event)">
+              </div> 
             </div>
-            <div onclick="iconSizeUpdate(event)" id="icon-medium">
-              <p>Medium</p>
-            </div>
-            <div onclick="iconSizeUpdate(event)" id="icon-large">
-              <p>Large</p>
+
+            <div id="icon-size-content" class="icon-size-content">
+              <div onclick="iconSizeUpdate(event)" id="icon-small">
+                <p>Small</p>
+              </div>
+              <div onclick="iconSizeUpdate(event)" id="icon-medium">
+                <p>Medium</p>
+              </div>
+              <div onclick="iconSizeUpdate(event)" id="icon-large">
+                <p>Large</p>
+              </div>
             </div>
           </div>
+
+
         </div>
         <div id="lower-window" class="div-lower-window-layout">
           <div id="folder-menu"  class="div-black-border">
@@ -48,6 +60,8 @@
             <h1>First Column</h1>
 
           </div>
+
+          <!-- File and Directory Display -->
           <div id="file-display" ondrop="droppedInWindow(event)" ondragover="draggedOverWindow(event)" ondragleave="draggedLeftWindow(event)" onclick="fileWindowClick(event)" class="div-black-border">
 
             <h1>Second Column</h1>
