@@ -5,6 +5,21 @@ const path = require('path');
 const remote = require('electron').remote;
 const Menu = remote.require('electron').Menu;
 const MenuItem = remote.require('electron').MenuItem;
+const {getCurrentWindow, globalShortcut} = require('electron').remote;
+
+var reload = ()=>{
+  getCurrentWindow().reload()
+}
+
+globalShortcut.register('F5', reload);
+globalShortcut.register('CommandOrControl+R', reload);
+
+window.addEventListener('beforeunload', ()=>{
+  globalShortcut.unregister('F5', reload);
+  globalShortcut.unregister('CommandOrControl+R', reload);
+})
+
+
 
 var remoteDirectories;
 var programState = {
@@ -30,6 +45,10 @@ function startUp() {
 	programState.iconSize['fontSize'] = 'medium';
 
 }
+
+/*************************************************
+ * onclick() events for dropdown menu
+ ************************************************/
 
 function showDropDown(event) {
 	dropdownContentDIV = document.getElementById('icon-size-content');
@@ -91,6 +110,72 @@ function iconSizeUpdate(event) {
 
 	hideDropDown();
 }
+
+/**************************************************
+ * events for current-directory-container
+ *************************************************/
+
+ //onclick
+ function fileSearchSelected(event) {
+		currentDirectoryContainer = document.getElementById('current-directory-container');
+
+		currentDirectoryContainer.style.borderWidth = "0px";
+		currentDirectoryContainer.style.boxShadow = "0px 8px 16px 0px rgba(0,0,0,0.2)";
+
+		currentDirectoryContainer.contentEditable = "true";
+		currentDirectoryContainer.style.zIndex = "1";
+		currentDirectoryContainer.style.height = "auto";
+
+		subDirectories = remoteDirectories[currentDirectoryContainer.innerText].sub_directories;
+
+		for (i = 0; i <	subDirectories.length; i++) {
+			divChild = document.createElement("div");
+			divChild.id = subDirectories[i];
+			divChild.innerHTML = divChild.id;
+
+			divChild.onclick = function(event) {
+				currentDirectoryContainer = document.getElementById('current-directory-container');
+				text = currentDirectoryContainer.innerText;
+
+				currentDirectoryContainer.innerHTML = path.join(text, divChild.innerText);
+			}
+
+			currentDirectoryContainer.appendChild(divChild);
+		}
+
+ }
+
+ //onKeyPress
+ function submitLocation(event) {
+
+	var code = (event.keyCode ? event.keyCode : event.which);
+	if(code != 13) { //Enter keycode
+		return;
+	}
+	currentDirectoryContainer = document.getElementById('current-directory-container');
+	if (currentDirectoryContainer.contentEditable == "false") {
+		return;
+	}
+
+	currentDirectoryContainer.style.borderColor = "black";
+	currentDirectoryContainer.style.borderWidth = "1px";
+	currentDirectoryContainer.style.boxShadow = "0px 0px 0px 0px rgba(0,0,0,0.2)";
+
+	let directoryText = currentDirectoryContainer.innerText;
+
+	currentDirectoryContainer.contentEditable = "false";
+
+	if (remoteDirectories[directoryText] == undefined) {
+		alert("Directory not found");
+		currentDirectoryContainer.innerHTML = programState.currentDirectory;
+	}
+	else {
+		programState.currentDirectory = directoryText;
+		programState.previousDirectory = path.dirname(directoryText);
+		showDir();
+	}
+
+ }
 
 
 /**************************************************
@@ -287,7 +372,8 @@ ipcRenderer.on('file-names', function(event, directoryInfo, user){
 	remoteDirectories = directoryInfo;
 	programState.user = user;
 	programState.currentDirectory = user
-	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
+	currentDirectoryContainer = document.getElementById('current-directory');
+	currentDirectoryContainer.innerHTML = programState.currentDirectory;
 	updateFilePaths()
 
 	//Create Directories as <li>
@@ -598,8 +684,8 @@ function showDirOnEvent(event) {
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
 
-	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
-
+	currentDirectoryContainer = document.getElementById('current-directory-container');
+	currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
 }
 
 //This function shows the desired directory when the window loads.
@@ -633,13 +719,17 @@ function showDir() {
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
 
-	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
+	currentDirectoryContainer = document.getElementById('current-directory-container');
+	currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
 }
 
 function handleKeyDown(event) {
 	var key = event.keyCode || event.charCode;
 	
 	if (key == 8) {
+		if (document.getElementById('current-directory-container').contentEditable == "true") {
+			return;
+		}
 		showPrevDir(event);
 	}
 	else if (key == 46) {
@@ -690,6 +780,6 @@ function showPrevDir(event) {
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
 
-	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
-
+	currentDirectoryContainer = document.getElementById('current-directory-container');
+	currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
 };
