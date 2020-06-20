@@ -9,7 +9,7 @@
 
 .div-file-window-layout {
 	display: grid;
-	grid-template-rows: 50px 525px;
+	grid-template-rows: 51px 524px;
 }
 
 .div-upper-window-layout {
@@ -68,4 +68,25 @@ ul.file-folder {
 
 	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
 	z-index: 1;
+}
+
+.dk-style {
+	height: 25px;
+	width: 90%;
+
+	margin-top: 13px;
+	margin-bottom: 13px;
+
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+	background-color: #88b4bd;
+	font-size: medium;
+
+	border-radius: 5px;
+	border: solid;
+	border-width: 1px;
+	border-color: black;
+}
+
+.center-current-location {
+	position: relative;
 }

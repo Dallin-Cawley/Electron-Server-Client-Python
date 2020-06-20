@@ -28,6 +28,7 @@ function startUp() {
 	programState.iconSize['imgWidth'] = '100px';
 	programState.iconSize['imgHeight'] = '100px';
 	programState.iconSize['fontSize'] = 'medium';
+
 }
 
 function showDropDown(event) {
@@ -286,7 +287,7 @@ ipcRenderer.on('file-names', function(event, directoryInfo, user){
 	remoteDirectories = directoryInfo;
 	programState.user = user;
 	programState.currentDirectory = user
-
+	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
 	updateFilePaths()
 
 	//Create Directories as <li>
@@ -597,6 +598,8 @@ function showDirOnEvent(event) {
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
 
+	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
+
 }
 
 //This function shows the desired directory when the window loads.
@@ -629,6 +632,8 @@ function showDir() {
 	//Update program state
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
+
+	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
 }
 
 function handleKeyDown(event) {
@@ -684,5 +689,7 @@ function showPrevDir(event) {
 	programState.previousDirectory = remoteDirectories[programState.currentDirectory].parent_directory;
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
+
+	document.getElementById('current-directory').innerHTML = programState.currentDirectory;
 
 };
