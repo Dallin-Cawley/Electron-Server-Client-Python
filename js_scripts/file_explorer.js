@@ -33,12 +33,12 @@ var programState = {
 }
 
 window.onload = startUp();
-document.addEventListener("keydown", handleKeyDown);
+document.addEventListener('keydown', handleKeyDown);
 
 function startUp() {
 	ipcRenderer.send('get-file-names')
 	dropdownSizeDIV = document.getElementById('icon-size');
-	dropdownSizeDIV.innerHTML = "Medium";
+	dropdownSizeDIV.innerHTML = 'Medium';
 
 	programState.iconSize['imgWidth'] = '100px';
 	programState.iconSize['imgHeight'] = '100px';
@@ -46,24 +46,39 @@ function startUp() {
 
 }
 
+function windowOnClick(event) {
+	hideFileSearch();
+	hideDropDown();
+}
+
+
+
+
 /*************************************************
  * onclick() events for icon size dropdown menu
  ************************************************/
 
 function showDropDown(event) {
+	event.stopPropagation();
+	hideFileSearch();
+
 	dropdownContentDIV = document.getElementById('icon-size-content');
-	dropdownContentDIV.style.opacity = "100%";
+	dropdownContentDIV.style.opacity = '100%';
 
 	dropdownArrow = document.getElementById('dropdown-arrow');
-	dropdownArrow.style.transform = "rotate(-135deg)";
+	dropdownArrow.style.transform = 'rotate(-135deg)';
 }
 
 function hideDropDown() {
 	dropdownContentDIV = document.getElementById('icon-size-content');
-	dropdownContentDIV.style.opacity = "0";
+	if (dropdownContentDIV.style.opacity == '0') {
+		return;
+	}
+
+	dropdownContentDIV.style.opacity = '0';
 
 	dropdownArrow = document.getElementById('dropdown-arrow');
-	dropdownArrow.style.transform = "rotate(45deg)";
+	dropdownArrow.style.transform = 'rotate(45deg)';
 }
 
 function iconSizeUpdate(event) {
@@ -78,14 +93,14 @@ function iconSizeUpdate(event) {
 
 		programState.iconSize.imgHeight = '75px';
 		programState.iconSize.imgWidth = '75px';
-		dropdownSizeDIV.innerHTML = "Small";
+		dropdownSizeDIV.innerHTML = 'Small';
 	}
 	else if (selection == 'icon-medium') {
 		programState.iconSize.fontSize = 'medium';
 
 		programState.iconSize.imgHeight = '100px';
 		programState.iconSize.imgWidth = '100px';
-		dropdownSizeDIV.innerHTML = "Medium";
+		dropdownSizeDIV.innerHTML = 'Medium';
 	}
 	else if (selection == 'icon-large') {
 		programState.iconSize.fontSize = 'large';
@@ -93,7 +108,7 @@ function iconSizeUpdate(event) {
 		programState.iconSize.imgHeight = '125px';
 		programState.iconSize.imgWidth = '125px';
 
-		dropdownSizeDIV.innerHTML = "Large";
+		dropdownSizeDIV.innerHTML = 'Large';
 	}
 
 	for (i = 0; i < liList.length; i++) {
@@ -111,59 +126,108 @@ function iconSizeUpdate(event) {
 	hideDropDown();
 }
 
+
+
+
+
 /**************************************************
  * events for current-directory-container
  *************************************************/
 
+ //place cursor at end of contentEditable entity
+
+//Courtesy of Nico Burns: Stack Overflow post 
+//https://stackoverflow.com/questions/1125292/how-to-move-cursor-to-end-of-contenteditable-entity/3866442#3866442
+ function focusEnd(element) {
+	 let range,selection;
+	 if(document.createRange) {//Firefox, Chrome, Opera, Safari, IE 9+
+		 range = document.createRange();
+		 range.selectNodeContents(element);
+		 range.collapse(false);
+		 selection = window.getSelection();
+		 selection.removeAllRanges();
+		 selection.addRange(range);
+	 }
+	 else if(document.selection) {//IE 8 and lower  
+		 range = document.body.createTextRange();
+		 range.moveToElementText(element);
+		 range.collapse(false);
+		 range.select();
+	 }
+ }
+
+
  //onclick
 function fileSearchClick(event) {
-	let currentDirectoryContainer = document.getElementById('current-directory-container');
-	currentDirectoryContainer.style.borderWidth = "0px";
-	currentDirectoryContainer.style.boxShadow = "0px 8px 16px 0px rgba(0,0,0,0.2)";
+	event.stopPropagation();
+	hideDropDown();
 
-	currentDirectoryContainer.contentEditable = "true";
-	currentDirectoryContainer.style.zIndex = "1";
-	currentDirectoryContainer.style.height = "auto";
+	let currentDirectoryContainer = document.getElementById('current-directory-container');
+
+	currentDirectoryContainer.style.borderWidth = '0px';
+	currentDirectoryContainer.style.boxShadow = '0px 8px 16px 0px rgba(0,0,0,0.2)';
+	currentDirectoryContainer.style.zIndex = '1';
+	currentDirectoryContainer.style.height = 'auto';
+
+	let currentDirectoryDiv = document.getElementById('current-directory');
+	currentDirectoryDiv.contentEditable = 'true';
+	focusEnd(currentDirectoryDiv);
 
 	updateFileSearch(event);
 }
 
+function hideFileSearch() {
+	let currentDirectoryContainer = document.getElementById('current-directory-container');
+
+	for (i = 1; i < currentDirectoryContainer.childNodes.length; i++) {
+		if (currentDirectoryContainer.lastChild.id == 'current-directory') {
+			continue;
+		}
+		currentDirectoryContainer.removeChild(currentDirectoryContainer.lastChild);
+	}
+	
+	let currentDirectoryDiv = document.getElementById('current-directory');
+	if (currentDirectoryDiv.contentEditable == 'false') {
+		return;
+	}
+
+
+	currentDirectoryContainer.style.height = '25px'
+	currentDirectoryContainer.style.zIndex = '0'
+	currentDirectoryContainer.style.boxShadow = '0px 0px 0px 0px rgba(0,0,0,0.2)';
+
+	currentDirectoryDiv.contentEditable = 'false';
+}
+
  function updateFileSearch(event) {
-		console.log("Updating file search.");
 		let currentDirectoryContainer = document.getElementById('current-directory-container');
+		let currentDirectoryDiv = document.getElementById('current-directory');	
+		
 		let childNodes = currentDirectoryContainer.getElementsByTagName('div');
-		console.log("Child Nodes:", childNodes);
 		let childNodeLength = childNodes.length;
 
-		for (i = 0; i < childNodeLength; i++) {
-			console.log("Node:", childNodes[i]);
-			childNodeType = childNodes[i].nodeType;
-			if (childNodes[i].id != "current-directory") {
-				currentDirectoryContainer.removeChild(childNodes[i]);
-			}
+		for (i = 1; i < childNodeLength; i++) {
+			currentDirectoryContainer.removeChild(currentDirectoryContainer.lastChild);
 		}
-		
-		subDirectories = remoteDirectories[currentDirectoryContainer.innerText].sub_directories;
-		console.log("Sub directories:", subDirectories);
-		console.log("Sub directories length", subDirectories.length);
+
+		subDirectories = remoteDirectories[currentDirectoryDiv.innerText].sub_directories;
 		for (i = 0; i <	subDirectories.length; i++) {
-			divChild = document.createElement("div");
+			divChild = document.createElement('div');
+			textNode = document.createTextNode(subDirectories[i]);
 			divChild.id = subDirectories[i];
-			divChild.innerHTML = divChild.id;
+			divChild.appendChild(textNode);
 
 			divChild.onclick = function(event) {
 				event.stopPropagation();
 				currentDirectoryDiv = document.getElementById('current-directory');
 				text = currentDirectoryDiv.innerText;
-				currentDirectoryDiv.innerHTML = path.join(text, divChild.innerText);
+				currentDirectoryDiv.innerHTML = path.join(text, event.target.innerText);
 				updateFileSearch(event);
+				focusEnd(document.getElementById('current-directory'));
 			}
 
 			currentDirectoryContainer.appendChild(divChild);
 		}
-		console.log("Child nodes:", currentDirectoryContainer.childNodes);
-
-
  }
 
  //onKeyPress
@@ -173,28 +237,35 @@ function fileSearchClick(event) {
 	if(code != 13) { //Enter keycode
 		return;
 	}
+
 	let currentDirectoryContainer = document.getElementById('current-directory-container');
-	if (currentDirectoryContainer.contentEditable == "false") {
+	let currentDirectoryDiv = document.getElementById('current-directory');
+	if (currentDirectoryDiv.contentEditable == 'false') {
 		return;
 	}
 
-	currentDirectoryContainer.style.borderColor = "black";
-	currentDirectoryContainer.style.borderWidth = "1px";
-	currentDirectoryContainer.style.boxShadow = "0px 0px 0px 0px rgba(0,0,0,0.2)";
+	currentDirectoryContainer.style.borderColor = 'black';
+	currentDirectoryContainer.style.borderWidth = '1px';
+	currentDirectoryContainer.style.boxShadow = '0px 0px 0px 0px rgba(0,0,0,0.2)';
+	currentDirectoryContainer.style.height = '25px';
 
-	let directoryText = currentDirectoryContainer.firstChild.innerText;
+	let directoryText = currentDirectoryDiv.innerText;
+	if (directoryText[directoryText.length - 1] == '\\' || directoryText[directoryText.length - 1] == '/') {
+		directoryText = directoryText.slice(0, -1);
+	}
 
-	currentDirectoryContainer.contentEditable = "false";
+	currentDirectoryDiv.contentEditable = 'false';
 
 	if (remoteDirectories[directoryText] == undefined) {
-		alert("Directory not found");
-		currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
+		alert('Directory not found');
+		currentDirectoryDiv.innerHTML = programState.currentDirectory;
 	}
 	else {
 		programState.currentDirectory = directoryText;
 		programState.previousDirectory = path.dirname(directoryText);
 		showDir();
 	}
+	hideFileSearch();
 
  }
 
@@ -203,18 +274,18 @@ function fileSearchClick(event) {
  * Save Dialog
  *************************************************/
 ipcRenderer.on('no-directory-selected', function() {
-	alert("No Directory was selected. Please try again");
+	alert('No Directory was selected. Please try again');
 })
 
 ipcRenderer.on('download-status', function(event, downloadStatus) {
 	if (downloadStatus.downloaded == true) {
-		message = "All files were saved."
+		message = 'All files were saved.'
 		alert(message);
 	}
 	else {
-		message = "The following files were NOT saved.....";
+		message = 'The following files were NOT saved.....';
 		for (file in downloadStatus.unsaved_files) {
-			message += "\n\t" + downloadStatus.unsaved_files[file] + '\n'
+			message += '\n\t' + downloadStatus.unsaved_files[file] + '\n'
 		}
 		alert(message);
 	}
@@ -240,7 +311,7 @@ const download = new MenuItem({
 
 		}
 		else {
-			alert("Please select atleast one File or Directory");
+			alert('Please select atleast one File or Directory');
 		}
 	}
 })
@@ -263,7 +334,7 @@ function createLiElements(fileBody) {
 	let directory = fileBody.directory;
 
 	// Prepare local variables for repeated use in loop
-	let ul = document.getElementById("file-name-list");
+	let ul = document.getElementById('file-name-list');
 	let imageSrc = fileBody.image;
 	let fileList = fileBody.to_display;
 
@@ -271,27 +342,27 @@ function createLiElements(fileBody) {
 	for (fileIndex in fileList){
 
 		//Create <li> element
-		let liNode = document.createElement("li");
-		liNode.style.height = "auto";
-		liNode.style.width = "auto";
+		let liNode = document.createElement('li');
+		liNode.style.height = 'auto';
+		liNode.style.width = 'auto';
 		let text = document.createTextNode(fileList[fileIndex]);
 		
-		let divNode = document.createElement("div")
+		let divNode = document.createElement('div')
 		divNode.appendChild(text);
 		divNode.id = 'div_' + fileList[fileIndex];
-		divNode.style.height = "auto";
+		divNode.style.height = 'auto';
 		divNode.style.width = programState.iconSize.imgWidth;
 		divNode.style.fontSize = programState.iconSize.fontSize;
 		
 		liNode.id = fileList[fileIndex];
 		
 		//Create and adjust image
-		let image = document.createElement("img");
+		let image = document.createElement('img');
 		image.id = fileList[fileIndex];
 		image.setAttribute('src', imageSrc);
 		image.style.width = programState.iconSize.imgWidth;
 		image.style.height = programState.iconSize.imgHeight;
-		image.style.margin = "auto";
+		image.style.margin = 'auto';
 
 		liNode.appendChild(divNode);
 		liNode.appendChild(image);
@@ -375,7 +446,7 @@ function createLiElements(fileBody) {
 			}
 		}
 
-		//Add it to <ul id="file-name-list">
+		//Add it to <ul id='file-name-list'>
 		ul.appendChild(liNode);
 	}
 }
@@ -416,7 +487,7 @@ ipcRenderer.on('file-names', function(event, directoryInfo, user){
 
 
 ipcRenderer.on('update-file-names', function(event, responseBody) {
-	let updatedDirectories = responseBody["updated_directories"];
+	let updatedDirectories = responseBody['updated_directories'];
 
 	if (typeof updatedDirectories == 'string') {
 		updatedDirectories = JSON.parse(updatedDirectories);
@@ -432,7 +503,7 @@ ipcRenderer.on('update-file-names', function(event, responseBody) {
 		else {
 			parentPath = programState.user;
 		}
-		updatedDirectories[dirKey]["parent_directory"] = parentPath;
+		updatedDirectories[dirKey]['parent_directory'] = parentPath;
 		remoteDirectories[dirKey] = updatedDirectories[dirKey];
 	}
 
@@ -555,26 +626,26 @@ function liOnClick(event) {
 
 //Change the name of a File or Directory
 function renameItem(event) {
-	let liId = event.target.id.replace("div_", '');
+	let liId = event.target.id.replace('div_', '');
 	let liChildList = document.getElementById(liId).childNodes;
 	let liItem = 0;
 
 	//Find the div element
 	for (i = 0; i < liChildList.length; i++) {
 
-		if (liChildList[i].tagName == "DIV") {
+		if (liChildList[i].tagName == 'div') {
 			liItem = liChildList[i];
 			break;
 		}
 	}
 
 	if (liItem == 0) {
-		console.log("Div element for", event.target.id, "not found.");
+		console.log('Div element for', event.target.id, 'not found.');
 		return;
 	}
 	
 	//div element was found. Allow it to be edited.
-	liItem.contentEditable = "true";
+	liItem.contentEditable = 'true';
 
 }
 
@@ -672,12 +743,12 @@ function showDirOnEvent(event) {
 	let selectedDirectory = remoteDirectories[selectionPath];
 
 	if (selectedDirectory == null){
-		alert("Unable to find selection.")
+		alert('Unable to find selection.')
 		return false;
 	}
 
 	//Remove current <li> elements
-	let fileListUl = document.getElementById("file-name-list");
+	let fileListUl = document.getElementById('file-name-list');
 
 	while(fileListUl.firstChild) {
 		fileListUl.removeChild(fileListUl.lastChild);
@@ -705,15 +776,15 @@ function showDirOnEvent(event) {
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
 
-	currentDirectoryContainer = document.getElementById('current-directory-container');
-	currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
+	currentDirectoryDiv = document.getElementById('current-directory');
+	currentDirectoryDiv.innerHTML = programState.currentDirectory;
 }
 
 //This function shows the desired directory when the window loads.
 function showDir() {
 
 	//Remove current <li> elements
-	let fileListUl = document.getElementById("file-name-list");
+	let fileListUl = document.getElementById('file-name-list');
 
 	while(fileListUl.firstChild) {
 		fileListUl.removeChild(fileListUl.lastChild);
@@ -740,19 +811,21 @@ function showDir() {
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
 
-	currentDirectoryContainer = document.getElementById('current-directory-container');
-	currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
+	currentDirectoryDiv = document.getElementById('current-directory');
+	currentDirectoryDiv.innerHTML = programState.currentDirectory;
 }
 
 function handleKeyDown(event) {
 	var key = event.keyCode || event.charCode;
-	
+	if (document.getElementById('current-directory').contentEditable == 'true') {
+		return;
+	}
+
+	//Backspace
 	if (key == 8) {
-		if (document.getElementById('current-directory-container').contentEditable == "true") {
-			return;
-		}
 		showPrevDir(event);
 	}
+	//Delete
 	else if (key == 46) {
 		deleteFileDir(event);
 	}
@@ -773,7 +846,7 @@ function showPrevDir(event) {
 	let selectedDirectory = remoteDirectories[programState.previousDirectory];
 		
 	//Remove current <li> elements
-	let fileListUl = document.getElementById("file-name-list");
+	let fileListUl = document.getElementById('file-name-list');
 
 	while(fileListUl.firstChild) {
 		fileListUl.removeChild(fileListUl.lastChild);
@@ -801,6 +874,6 @@ function showPrevDir(event) {
 	programState.selectedFiles.length = 0;
 	programState.recentSelection = null;
 
-	currentDirectoryContainer = document.getElementById('current-directory-container');
-	currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
+	currentDirectoryDiv = document.getElementById('current-directory');
+	currentDirectoryDiv.innerHTML = programState.currentDirectory;
 };

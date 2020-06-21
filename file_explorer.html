@@ -21,14 +21,14 @@
 
       <title>File Explorer</title>
     </head>
-    <body style="background-color: #99badd;" id="mainBody">
+    <body style="background-color: #99badd;" id="mainBody" onclick="windowOnClick(event)">
       <div id="file-explorer-window" class="div-file-window-layout">
         <div id="upper-window" class="div-upper-window-layout">
           <div>
             <h3>Upper Column 1</h3>
           </div>
           <div id="current-directory-container" class="dk-style" onclick="fileSearchClick(event)" onKeyPress="submitLocation(event)">
-            <div id="current-directory" class="center-current-location"></div>
+            <div id="current-directory" class="center-current-location" onfocus="this.value = this.value;"></div>
           </div>
 
           <!--- Icon size dropdown -->
