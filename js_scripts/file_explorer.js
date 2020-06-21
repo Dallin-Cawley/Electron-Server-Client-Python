@@ -47,7 +47,7 @@ function startUp() {
 }
 
 /*************************************************
- * onclick() events for dropdown menu
+ * onclick() events for icon size dropdown menu
  ************************************************/
 
 function showDropDown(event) {
@@ -116,32 +116,53 @@ function iconSizeUpdate(event) {
  *************************************************/
 
  //onclick
- function fileSearchSelected(event) {
-		currentDirectoryContainer = document.getElementById('current-directory-container');
+function fileSearchClick(event) {
+	let currentDirectoryContainer = document.getElementById('current-directory-container');
+	currentDirectoryContainer.style.borderWidth = "0px";
+	currentDirectoryContainer.style.boxShadow = "0px 8px 16px 0px rgba(0,0,0,0.2)";
 
-		currentDirectoryContainer.style.borderWidth = "0px";
-		currentDirectoryContainer.style.boxShadow = "0px 8px 16px 0px rgba(0,0,0,0.2)";
+	currentDirectoryContainer.contentEditable = "true";
+	currentDirectoryContainer.style.zIndex = "1";
+	currentDirectoryContainer.style.height = "auto";
 
-		currentDirectoryContainer.contentEditable = "true";
-		currentDirectoryContainer.style.zIndex = "1";
-		currentDirectoryContainer.style.height = "auto";
+	updateFileSearch(event);
+}
 
+ function updateFileSearch(event) {
+		console.log("Updating file search.");
+		let currentDirectoryContainer = document.getElementById('current-directory-container');
+		let childNodes = currentDirectoryContainer.getElementsByTagName('div');
+		console.log("Child Nodes:", childNodes);
+		let childNodeLength = childNodes.length;
+
+		for (i = 0; i < childNodeLength; i++) {
+			console.log("Node:", childNodes[i]);
+			childNodeType = childNodes[i].nodeType;
+			if (childNodes[i].id != "current-directory") {
+				currentDirectoryContainer.removeChild(childNodes[i]);
+			}
+		}
+		
 		subDirectories = remoteDirectories[currentDirectoryContainer.innerText].sub_directories;
-
+		console.log("Sub directories:", subDirectories);
+		console.log("Sub directories length", subDirectories.length);
 		for (i = 0; i <	subDirectories.length; i++) {
 			divChild = document.createElement("div");
 			divChild.id = subDirectories[i];
 			divChild.innerHTML = divChild.id;
 
 			divChild.onclick = function(event) {
-				currentDirectoryContainer = document.getElementById('current-directory-container');
-				text = currentDirectoryContainer.innerText;
-
-				currentDirectoryContainer.innerHTML = path.join(text, divChild.innerText);
+				event.stopPropagation();
+				currentDirectoryDiv = document.getElementById('current-directory');
+				text = currentDirectoryDiv.innerText;
+				currentDirectoryDiv.innerHTML = path.join(text, divChild.innerText);
+				updateFileSearch(event);
 			}
 
 			currentDirectoryContainer.appendChild(divChild);
 		}
+		console.log("Child nodes:", currentDirectoryContainer.childNodes);
+
 
  }
 
@@ -152,7 +173,7 @@ function iconSizeUpdate(event) {
 	if(code != 13) { //Enter keycode
 		return;
 	}
-	currentDirectoryContainer = document.getElementById('current-directory-container');
+	let currentDirectoryContainer = document.getElementById('current-directory-container');
 	if (currentDirectoryContainer.contentEditable == "false") {
 		return;
 	}
@@ -161,13 +182,13 @@ function iconSizeUpdate(event) {
 	currentDirectoryContainer.style.borderWidth = "1px";
 	currentDirectoryContainer.style.boxShadow = "0px 0px 0px 0px rgba(0,0,0,0.2)";
 
-	let directoryText = currentDirectoryContainer.innerText;
+	let directoryText = currentDirectoryContainer.firstChild.innerText;
 
 	currentDirectoryContainer.contentEditable = "false";
 
 	if (remoteDirectories[directoryText] == undefined) {
 		alert("Directory not found");
-		currentDirectoryContainer.innerHTML = programState.currentDirectory;
+		currentDirectoryContainer.firstChild.innerHTML = programState.currentDirectory;
 	}
 	else {
 		programState.currentDirectory = directoryText;
@@ -372,8 +393,8 @@ ipcRenderer.on('file-names', function(event, directoryInfo, user){
 	remoteDirectories = directoryInfo;
 	programState.user = user;
 	programState.currentDirectory = user
-	currentDirectoryContainer = document.getElementById('current-directory');
-	currentDirectoryContainer.innerHTML = programState.currentDirectory;
+	let currentDirectoryDiv = document.getElementById('current-directory');
+	currentDirectoryDiv.innerHTML = programState.currentDirectory;
 	updateFilePaths()
 
 	//Create Directories as <li>
