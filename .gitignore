@@ -128,5 +128,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-#server configuration
+# server configuration
 python_scripts/server_config.txt
+
+# node
+/node_modules/
