@@ -43,12 +43,15 @@ function startUp() {
 	programState.iconSize['imgWidth'] = '100px';
 	programState.iconSize['imgHeight'] = '100px';
 	programState.iconSize['fontSize'] = 'medium';
+	programState.iconSize['divHeight'] = '30px';
+	programState.iconSize['liHeight'] = (parseInt(programState.iconSize.imgHeight) + parseInt(programState.iconSize.divHeight) + 5).toString() + 'px';
 
 }
 
 function windowOnClick(event) {
 	hideFileSearch();
 	hideDropDown();
+	deselectAllElements();
 }
 
 
@@ -90,25 +93,34 @@ function iconSizeUpdate(event) {
 	
 	if (selection == 'icon-small') {
 		programState.iconSize.fontSize = 'small';
+		programState.iconSize.divHeight = '20px';
 
 		programState.iconSize.imgHeight = '75px';
 		programState.iconSize.imgWidth = '75px';
 		dropdownSizeDIV.innerHTML = 'Small';
+
+		programState.iconSize.liHeight = (parseInt(programState.iconSize.imgHeight) + parseInt(programState.iconSize.divHeight) + 5).toString() + 'px';
 	}
 	else if (selection == 'icon-medium') {
 		programState.iconSize.fontSize = 'medium';
+		programState.iconSize.divHeight = '30px';
 
 		programState.iconSize.imgHeight = '100px';
 		programState.iconSize.imgWidth = '100px';
 		dropdownSizeDIV.innerHTML = 'Medium';
+
+		programState.iconSize.liHeight = (parseInt(programState.iconSize.imgHeight) + parseInt(programState.iconSize.divHeight) + 5).toString() + 'px';
 	}
 	else if (selection == 'icon-large') {
 		programState.iconSize.fontSize = 'large';
+		programState.iconSize.divHeight = '40px';
 
 		programState.iconSize.imgHeight = '125px';
 		programState.iconSize.imgWidth = '125px';
 
 		dropdownSizeDIV.innerHTML = 'Large';
+
+		programState.iconSize.liHeight = (parseInt(programState.iconSize.imgHeight) + parseInt(programState.iconSize.divHeight) + 5).toString() + 'px';
 	}
 
 	for (i = 0; i < liList.length; i++) {
@@ -116,8 +128,13 @@ function iconSizeUpdate(event) {
 		let divChild = li.firstChild;
 		let imgChild = li.lastChild;
 
+		li.style.gridTemplateRows = programState.iconSize.divHeight + ' ' + programState.iconSize.imgHeight;
+		li.style.height = programState.iconSize.liHeight;
+		li.style.width = programState.iconSize.imgWidth;
+
 		divChild.style.fontSize = programState.iconSize.fontSize;
 		divChild.style.width = programState.iconSize.imgWidth;
+		divChild.style.height = programState.iconSize.divHeight;
 
 		imgChild.style.height = programState.iconSize.imgHeight;
 		imgChild.style.width = programState.iconSize.imgWidth;
@@ -271,7 +288,7 @@ function hideFileSearch() {
 
 
 /**************************************************
- * Save Dialog
+ * Download status Dialog
  *************************************************/
 ipcRenderer.on('no-directory-selected', function() {
 	alert('No Directory was selected. Please try again');
@@ -343,16 +360,19 @@ function createLiElements(fileBody) {
 
 		//Create <li> element
 		let liNode = document.createElement('li');
-		liNode.style.height = 'auto';
-		liNode.style.width = 'auto';
+		liNode.style.height = programState.iconSize.liHeight;
+		liNode.style.width = programState.iconSize.imgWidth;
 		let text = document.createTextNode(fileList[fileIndex]);
 		
 		let divNode = document.createElement('div')
 		divNode.appendChild(text);
 		divNode.id = 'div_' + fileList[fileIndex];
-		divNode.style.height = 'auto';
+		divNode.style.height = programState.iconSize.divHeight;
 		divNode.style.width = programState.iconSize.imgWidth;
 		divNode.style.fontSize = programState.iconSize.fontSize;
+		divNode.style.overflow= 'hidden';
+		divNode.style.whiteSpace = 'nowrap';
+		divNode.style.textOverflow = 'ellipsis';
 		
 		liNode.id = fileList[fileIndex];
 		
@@ -581,16 +601,7 @@ function liOnClick(event) {
 			}
 		}
 		else {
-
-			//Set currently selected items back to default background color
-			for (i = 0; i < programState.selectedFiles.length; i++){
-				let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
-				document.getElementById(name + ext).style.backgroundColor = '#99badd';
-			}
-
-			//Clear selected files so only one can be selected at a time unless shift or control
-			//is clicked.
-			programState.selectedFiles.length = 0;
+			deselectAllElements(event)
 
 			//set selected item's background color.
 			event.currentTarget.style.backgroundColor = '#4863A0';
@@ -606,16 +617,7 @@ function liOnClick(event) {
 		programState.recentSelection = event.target.id;
 	}
 	else {
-		//Set currently selected items back to default background color
-		for (i = 0; i < programState.selectedFiles.length; i++){
-			let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
-			document.getElementById(name + ext).style.backgroundColor = '#99badd';
-		}
-
-		//Clear selected files so only one can be selected at a time unless shift or control
-		//is clicked.
-		programState.selectedFiles.length = 0;
-
+		deselectAllElements();
 		//set selected item's background color.
 		event.currentTarget.style.backgroundColor = '#4863A0';
 		programState.selectedFiles.push(path.join(programState.currentDirectory, event.target.id));
@@ -623,6 +625,23 @@ function liOnClick(event) {
 	}
 }
 
+
+function deselectAllElements() {
+	if (programState.selectedFiles.length <= 0) {
+		return;
+	}
+	
+	//Set currently selected items back to default background color
+	for (i = 0; i < programState.selectedFiles.length; i++){
+		let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
+		document.getElementById(name + ext).style.backgroundColor = '#99badd';
+	}
+
+	//Clear selected files so only one can be selected at a time unless shift or control
+	//is clicked.
+	programState.selectedFiles.length = 0;
+	programState.recentSelection = null;
+}
 
 //Change the name of a File or Directory
 function renameItem(event) {
@@ -662,19 +681,6 @@ function editableInputChange(event) {
 		document.getElementById(event.target.id).contentEditable = 'false';
 		ipcRenderer.send('rename-element', JSON.stringify(renameBody));
 	}
-}
-
-//Removes all selections
-function fileWindowClick(event) {
-
-	//Set currently selected items back to default background color
-	for (i = 0; i < programState.selectedFiles.length; i++){
-		let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
-		document.getElementById(name + ext).style.backgroundColor = '#99badd';
-	}
-
-	programState.selectedFiles.length = 0;
-	programState.recentSelection = null;
 }
 
 

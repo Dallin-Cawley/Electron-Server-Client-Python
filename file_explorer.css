@@ -30,7 +30,8 @@
 li {
 	display: grid;
 	grid-template-columns: auto;
-	grid-template-rows: auto auto;
+	grid-template-rows: 30px 100px;
+
 	float: left;
 	text-decoration: none;
 	margin-left: 10px;
