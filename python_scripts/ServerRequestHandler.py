@@ -184,6 +184,7 @@ class ServerRequestHandlerSwitch:
             for dir_list in directories:
                 for dir in dir_list:
                     full_path = Path(base_dir, dir)
+                    print("Full_path:", full_path)
 
                     if not path.exists(full_path):
                         mkdir(full_path)
