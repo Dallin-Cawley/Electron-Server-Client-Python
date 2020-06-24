@@ -276,6 +276,10 @@ class ServerRequestHandlerSwitch:
         deleting_items = request_body.get('to_delete')
 
         for item_del in deleting_items:
+            
+            if '\\' in item_del:
+                item_del = item_del.replace('\\', '/')
+
             item = Path(request_body.get('base_dir'), item_del)
             if path.isfile(item):
                 remove(item)
