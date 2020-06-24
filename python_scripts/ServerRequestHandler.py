@@ -183,6 +183,10 @@ class ServerRequestHandlerSwitch:
         try:
             for dir_list in directories:
                 for dir in dir_list:
+                    
+                    if '\\' in dir:
+                        dir.replace('\\', '/')
+
                     full_path = Path(base_dir, dir)
                     print("Full_path:", full_path)
 
