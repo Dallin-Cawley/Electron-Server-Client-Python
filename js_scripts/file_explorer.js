@@ -67,6 +67,19 @@ function showDropDown(event) {
 
 	dropdownContentDIV = document.getElementById('icon-size-content');
 	dropdownContentDIV.style.opacity = '100%';
+	dropdownContentDIV.onclick = 'iconSizeUpdate(event)';
+
+	iconSmall = document.getElementById('icon-small')
+	iconSmall.classList.toggle('border-hover');
+	iconSmall.style.pointerEvents = 'auto';
+	
+	iconMedium = document.getElementById('icon-medium')
+	iconMedium.classList.toggle('border-hover');
+	iconMedium.style.pointerEvents = 'auto';
+
+	iconLarge = document.getElementById('icon-large')
+	iconLarge.classList.toggle('border-hover');
+	iconLarge.style.pointerEvents = 'auto';
 
 	dropdownArrow = document.getElementById('dropdown-arrow');
 	dropdownArrow.style.transform = 'rotate(-135deg)';
@@ -79,6 +92,19 @@ function hideDropDown() {
 	}
 
 	dropdownContentDIV.style.opacity = '0';
+	dropdownContentDIV.onclick = null;
+
+	iconSmall = document.getElementById('icon-small')
+	iconSmall.classList.toggle('border-hover');
+	iconSmall.style.pointerEvents = 'none';
+	
+	iconMedium = document.getElementById('icon-medium')
+	iconMedium.classList.toggle('border-hover');
+	iconMedium.style.pointerEvents = 'none';
+
+	iconLarge = document.getElementById('icon-large')
+	iconLarge.classList.toggle('border-hover');
+	iconLarge.style.pointerEvents = 'none';
 
 	dropdownArrow = document.getElementById('dropdown-arrow');
 	dropdownArrow.style.transform = 'rotate(45deg)';

@@ -15,6 +15,7 @@
 .div-upper-window-layout {
 	display: grid;
 	grid-template-columns: 20% 60% 20%;
+	grid-template-rows: 50px;
 }
 
 .dropdown-layout {
@@ -59,16 +60,29 @@ ul.file-folder {
 	margin-top: 6px;
 }
 
+
 .icon-size-content {
 	opacity: 0;
 	position: absolute;
-	background-color: #f1f1f1;
-	min-width: 150px;
+	background-color: rgb(61, 60, 60);
+	min-width: 100%;
+
+	pointer-events: none;
 	
 	transition: opacity 500ms;
+	border-radius: 5px;
 
 	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
 	z-index: 1;
+}
+
+.border-hover:hover {
+	border-color: white;
+	border-radius: 5px;
+	border: solid;
+	border-width: 1px;
+
+	cursor: pointer;
 }
 
 .dk-style {
@@ -79,7 +93,6 @@ ul.file-folder {
 	margin-bottom: 13px;
 
 	background-color: rgb(61, 60, 60);
-	
 	font-size: medium;
 	font-weight: 300;
 	color: white;

@@ -13,8 +13,8 @@ def main():
     client_socket = socket.socket()
 
     # Connect to remote host
-    client_socket.connect(('73.6.148.194', 10000))
-    # client_socket.connect(('127.0.0.1', 10000))
+    # client_socket.connect(('73.6.148.194', 10000))
+    client_socket.connect(('127.0.0.1', 10000))
 
     cmd_arg = {}
     i = 0
