@@ -183,7 +183,7 @@ class ServerRequestHandlerSwitch:
         try:
             for dir_list in directories:
                 for dir in dir_list:
-                    
+
                     if '\\' in dir:
                         dir.replace('\\', '/')
 
@@ -214,6 +214,11 @@ class ServerRequestHandlerSwitch:
 
                 # Recieve the file bytes and write them
                 file_bytes = self.con_socket.recieve_file()
+                file_sub_path = file_info.get('file_sub_path')
+
+                if '\\' in file_sub_path:
+                    file_sub_path.replace('\\', '/')
+
                 opened_file = open(Path(request_body.get('base_dir'), paste_dir, file_info.get('file_sub_path')), 'wb')
                 opened_file.write(file_bytes)
                 opened_file.close()
