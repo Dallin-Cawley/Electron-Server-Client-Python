@@ -219,10 +219,10 @@ class ServerRequestHandlerSwitch:
                 if '\\' in file_sub_path:
                     file_sub_path = file_sub_path.replace('\\', '/')
 
-                opened_file = open(Path(request_body.get('base_dir'), paste_dir, file_sub_path, 'wb'))
+                opened_file = open(Path(request_body.get('base_dir'), paste_dir, file_sub_path), 'wb')
                 opened_file.write(file_bytes)
                 opened_file.close()
-                file_list.append(file_info.get('file_sub_path'))
+                file_list.append(file_sub_path)
 
             except IOError as ioerror:
                 error = "There was an error saving file " + file_info.get('file_sub_path') + "\n\t" + "ERROR: " + str(ioerror) + "\n"
