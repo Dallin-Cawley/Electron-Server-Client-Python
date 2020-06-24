@@ -264,10 +264,9 @@ class ServerRequestHandlerSwitch:
 
     def handle_delete(self, request_body):
         deleting_items = request_body.get('to_delete')
-        print("Deleting Items:", deleting_items)
 
         for item_del in deleting_items:
-            item = path.join(request_body.get('base_dir'), item_del)
+            item = Path(request_body.get('base_dir'), item_del)
             if path.isfile(item):
                 remove(item)
             else:
