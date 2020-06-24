@@ -8,7 +8,7 @@ from security import security
 from sys import getsizeof
 from shutil import rmtree
 from pathlib import PurePath, Path
-from os import path, mkdir, walk
+from os import path, mkdir, walk, remove
 
 
 class ServerRequestHandlerSwitch:
@@ -268,7 +268,7 @@ class ServerRequestHandlerSwitch:
         for item_del in deleting_items:
             item = path.join(request_body.get('base_dir'), item_del)
             if path.isfile(item):
-                os.remove(item)
+                remove(item)
             else:
                 rmtree(item)
 
@@ -288,6 +288,7 @@ class ServerRequestHandlerSwitch:
         desired_directory = base_dir / request_body.get('current_directory')
         
         # If the requested directory doesn't exist, create it.
+        # Only used if the user's directory doesn't exist.
         if not path.exists(desired_directory):
             mkdir(desired_directory)       
 

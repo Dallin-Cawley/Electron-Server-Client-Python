@@ -83,7 +83,7 @@ class ClientRequestHandlerSwitch(object):
         self.net_socket.send(body)
         current_directory_list = self.net_socket.response()
 
-        return current_directory_list
+        return convertPath(current_directory_list)
 
 
     def recursive_get_dir_names(self, directory_path, directory_sub_path):
@@ -179,6 +179,29 @@ class ClientRequestHandlerSwitch(object):
 
         return response
 
+    def convertPath(self, paths):
+        converted_paths = {}
+        for dir in paths:
+            new_dir = paths.get(dir)
+            new_dir.update({'name': Path(new_dir.get('name'))})
+            new_dir.update({'path': Path(new_dir.get('path'))})
+
+            sub_directories = new_dir.get('sub_directories')
+            new_sub_directories = []
+            for i in range(0, len(sub_directories)):
+                new_sub_directories.append(Path(sub_directories[i]))
+
+            files = new_dir.get('files_names')
+            new_files = []
+            for i in range(0, len(files)):
+                new_files.append(Path(files[i]))
+
+            new_dir.update({'file_names': new_files})
+            new_dir.update({'sub_directories': sub_directories})
+
+            converted_paths.update({Path(dir): new_dir})
+
+        return converted_paths
 
 
         

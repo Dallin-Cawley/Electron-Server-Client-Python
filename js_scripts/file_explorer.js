@@ -362,11 +362,12 @@ function createLiElements(fileBody) {
 		let liNode = document.createElement('li');
 		liNode.style.height = programState.iconSize.liHeight;
 		liNode.style.width = programState.iconSize.imgWidth;
+
 		let text = document.createTextNode(fileList[fileIndex]);
-		
 		let divNode = document.createElement('div')
 		divNode.appendChild(text);
 		divNode.id = 'div_' + fileList[fileIndex];
+
 		divNode.style.height = programState.iconSize.divHeight;
 		divNode.style.width = programState.iconSize.imgWidth;
 		divNode.style.fontSize = programState.iconSize.fontSize;
@@ -559,11 +560,13 @@ function updateFilePaths() {
 		}
 		//For easy access to parent directories later
 		let subDirectoryList = remoteDirectories[directory].sub_directories;
-		
+		console.log("Remote Directories:", remoteDirectories);
 		if (subDirectoryList != null) {
 			if (subDirectoryList.length > 0) {
+				console.log("subDirectoryList:", subDirectoryList);
 				for (i = 0; i < subDirectoryList.length; i++) {
 					subDirIndex = path.join(directory, subDirectoryList[i]);
+					console.log("subDirIndex:", subDirIndex)
 					remoteDirectories[subDirIndex].parent_directory = directory;
 				}
 			}
