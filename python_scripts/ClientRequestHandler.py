@@ -58,7 +58,10 @@ class ClientRequestHandlerSwitch(object):
 
 
         # return the updated directories
-        return self.net_socket.response()
+        response = self.net_socket.response()
+        response.update({'updated_directories': self.convertPath(response.get('updated_directories'))})
+        
+        return response
 
     def handle_download(self, function_call_body):
         user = function_call_body.get(2)
@@ -83,7 +86,7 @@ class ClientRequestHandlerSwitch(object):
         self.net_socket.send(body)
         current_directory_list = self.net_socket.response()
 
-        return convertPath(current_directory_list)
+        return self.convertPath(current_directory_list)
 
 
     def recursive_get_dir_names(self, directory_path, directory_sub_path):
@@ -175,7 +178,7 @@ class ClientRequestHandlerSwitch(object):
                 return response
 
         response = self.net_socket.response()
-
+        response.update({'updated_directories': self.convertPath(response.get('updated_directories'))})
 
         return response
 
@@ -183,23 +186,24 @@ class ClientRequestHandlerSwitch(object):
         converted_paths = {}
         for dir in paths:
             new_dir = paths.get(dir)
-            new_dir.update({'name': Path(new_dir.get('name'))})
-            new_dir.update({'path': Path(new_dir.get('path'))})
+            new_dir.update({'name': str(Path(new_dir.get('name')))})
+            new_dir.update({'path': str(Path(new_dir.get('path')))})
 
             sub_directories = new_dir.get('sub_directories')
             new_sub_directories = []
             for i in range(0, len(sub_directories)):
-                new_sub_directories.append(Path(sub_directories[i]))
+                new_sub_directories.append(str(Path(sub_directories[i])))
 
-            files = new_dir.get('files_names')
+            files = new_dir.get('file_names')
             new_files = []
+
             for i in range(0, len(files)):
-                new_files.append(Path(files[i]))
+                new_files.append(str(Path(files[i])))
 
             new_dir.update({'file_names': new_files})
             new_dir.update({'sub_directories': sub_directories})
 
-            converted_paths.update({Path(dir): new_dir})
+            converted_paths.update({str(Path(dir)): new_dir})
 
         return converted_paths
 
