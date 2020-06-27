@@ -210,12 +210,11 @@ function fileSearchClick(event) {
 	currentDirectoryContainer.style.borderWidth = '0px';
 	currentDirectoryContainer.style.boxShadow = '0px 8px 16px 0px rgba(0,0,0,0.2)';
 	currentDirectoryContainer.style.zIndex = '1';
-	currentDirectoryContainer.style.height = 'auto';
 
 	let currentDirectoryDiv = document.getElementById('current-directory');
 	currentDirectoryDiv.contentEditable = 'true';
-	focusEnd(currentDirectoryDiv);
 
+	focusEnd(currentDirectoryDiv);
 	updateFileSearch(event);
 }
 
@@ -254,24 +253,45 @@ function hideFileSearch() {
 		}
 
 		subDirectories = remoteDirectories[currentDirectoryDiv.innerText].sub_directories;
-		for (i = 0; i <	subDirectories.length; i++) {
+		subDirectoriesLength = subDirectories.length;
+
+		if (subDirectoriesLength <= 0) {
 			divChild = document.createElement('div');
-			textNode = document.createTextNode(subDirectories[i]);
-			divChild.id = subDirectories[i];
+			textNode = document.createTextNode('No Directories Found');
+			divChild.id = 'no-directories-found';
 			divChild.appendChild(textNode);
+			divChild.style.height = "25px";
+			divChild.style.width = "100%";
+			divChild.style.color = '#8D8C8C'
 
-			divChild.onclick = function(event) {
-				event.stopPropagation();
-				currentDirectoryDiv = document.getElementById('current-directory');
-				text = currentDirectoryDiv.innerText;
-				currentDirectoryDiv.innerHTML = path.join(text, event.target.innerText);
-				updateFileSearch(event);
-				focusEnd(document.getElementById('current-directory'));
-			}
-
+			currentDirectoryContainer.style.height = '50px';
 			currentDirectoryContainer.appendChild(divChild);
 		}
- }
+		else {
+			for (i = 0; i <	subDirectoriesLength; i++) {
+
+				divChild = document.createElement('div');
+				textNode = document.createTextNode(subDirectories[i]);
+				divChild.id = subDirectories[i];
+				divChild.appendChild(textNode);
+				divChild.style.height = "25px";
+				divChild.style.width = "100%";
+
+				divChild.onclick = function(event) {
+					event.stopPropagation();
+					currentDirectoryDiv = document.getElementById('current-directory');
+					text = currentDirectoryDiv.innerText;
+					currentDirectoryDiv.innerHTML = path.join(text, event.target.innerText);
+					document.getElementById('current-directory-container').style.height = '25px'
+					updateFileSearch(event);
+					focusEnd(currentDirectoryDiv);
+				}
+
+				currentDirectoryContainer.appendChild(divChild);
+				currentDirectoryContainer.style.height = (parseInt(currentDirectoryContainer.offsetHeight) + 25).toString() + 'px';
+			}
+		}
+ 	}
 
  //onKeyPress
  function submitLocation(event) {
@@ -586,13 +606,10 @@ function updateFilePaths() {
 		}
 		//For easy access to parent directories later
 		let subDirectoryList = remoteDirectories[directory].sub_directories;
-		console.log("Remote Directories:", remoteDirectories);
 		if (subDirectoryList != null) {
 			if (subDirectoryList.length > 0) {
-				console.log("subDirectoryList:", subDirectoryList);
 				for (i = 0; i < subDirectoryList.length; i++) {
 					subDirIndex = path.join(directory, subDirectoryList[i]);
-					console.log("subDirIndex:", subDirIndex)
 					remoteDirectories[subDirIndex].parent_directory = directory;
 				}
 			}

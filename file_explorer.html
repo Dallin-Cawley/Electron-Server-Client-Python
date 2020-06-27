@@ -25,7 +25,9 @@
       <div id="file-explorer-window" class="div-file-window-layout">
         <div id="upper-window" class="div-upper-window-layout">
           <div>
-            <h3>Upper Column 1</h3>
+            <div id="back-container" class="back-container" onclick="showPrevDir()">
+              <div id="back-arrow" class="back-arrow"></div>
+            </div>
           </div>
           <div id="current-directory-container" class="dk-style" onclick="fileSearchClick(event)" onKeyPress="submitLocation(event)">
             <div id="current-directory" class="center-current-location" onfocus="this.value = this.value;"></div>
