@@ -1,5 +1,5 @@
-.div-black-border {
-	border: 3px solid #000000;
+html, body {
+	height: 100%;
 }
 
 .div-lower-window-layout {
@@ -9,7 +9,8 @@
 
 .div-file-window-layout {
 	display: grid;
-	grid-template-rows: 51px 524px;
+	grid-template-rows: 51px auto;
+	height: 100%;
 }
 
 .div-upper-window-layout {
@@ -19,14 +20,17 @@
 	justify-items: center;
 	align-items: center;
 
-	border: solid;
-	border-width: 2px;
-	border-color: black;
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
 }
 
 .dropdown-layout {
 	position: relative;
 	display: inline-block;
+}
+
+.folder-menu {
+	overflow: auto;
+	float: none;
 }
 
 .grid-two-column {
@@ -44,7 +48,7 @@ li {
 	margin-left: 10px;
 }
 
-ul.file-folder {
+.ul-file-folder {
 	list-style-type: none;
 	text-align: center; 
 	display: inline;
@@ -135,7 +139,7 @@ ul.file-folder {
 	color: white;
 	
 	border-radius: 5px;
-	border: solid;
+	border: solid;	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
 	border-width: 1px;
 	border-color: rgb(92, 88, 88);
 }

@@ -55,8 +55,6 @@ function windowOnClick(event) {
 }
 
 
-
-
 /*************************************************
  * onclick() events for icon size dropdown menu
  ************************************************/
@@ -550,6 +548,8 @@ ipcRenderer.on('file-names', function(event, directoryInfo, user){
 	fileBody['image'] = 'images/txt-file-icon.png'
 
 	createLiElements(fileBody);
+
+	createFolderMenu();
 })
 
 
@@ -578,8 +578,69 @@ ipcRenderer.on('update-file-names', function(event, responseBody) {
 		showDir();
 		programState.showDir = false;
 	}
-
 })
+
+
+/*********************************************
+ * Folder Menu Functions (Back Trace)
+ ********************************************/
+function createFolderMenu() {
+	parentFolder = document.getElementById('parent-folder');
+	textNode = document.createTextNode(programState.user);
+
+	arrowDiv = document.createElement('div');
+	arrowDiv.classList.add('dropdown-arrow');
+	arrowDiv.style.transform = 'rotate(315deg)';
+
+	parentFolder.appendChild(arrowDiv);
+	parentFolder.appendChild(textNode);
+	parentFolder.style.marginLeft = '10px';
+	parentFolder.style.display = 'grid';
+	parentFolder.style.gridTemplateColumns = '20px auto';
+	parentFolder.style.gridTemplateRows = 'auto';
+	parentFolder.style.border = '1px solid black';
+
+	parentFolder.id = programState.user;
+	parentFolder.onclick = updateFolderMenu;
+}
+
+
+function updateFolderMenu(event) {
+	event.stopPropagation();
+	subDirectories = remoteDirectories[event.target.id].sub_directories;
+
+	while (event.target.lastChild) {
+		if (event.target.childNodes.length == 2) {
+			break;
+		}
+		event.target.removeChild(event.target.lastChild);
+	}
+
+	for (i = 0; i < subDirectories.length; i++) {
+		let dirName = subDirectories[i];
+		let id = path.join(event.target.id, dirName);
+		let textNode = document.createTextNode(dirName);
+
+		let arrowDiv = document.createElement('div');
+		arrowDiv.classList.add('dropdown-arrow');
+		arrowDiv.style.transform = 'rotate(315deg)';
+
+		let divChild = document.createElement('div');
+		divChild.id = id;
+		divChild.style.marginLeft = '10px';
+		divChild.style.display = 'grid';
+		divChild.style.gridTemplateColumns = 'auto auto';
+		divChild.style.gridTemplateRows = 'auto';
+		divChild.style.border = '1px solid black';
+
+		
+		divChild.append(arrowDiv);
+		divChild.appendChild(textNode);
+		divChild.onclick = updateFolderMenu;
+		event.target.appendChild(divChild);
+
+	}
+}
 
 
 /**********************************************

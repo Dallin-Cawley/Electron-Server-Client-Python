@@ -57,17 +57,13 @@
 
         </div>
         <div id="lower-window" class="div-lower-window-layout">
-          <div id="folder-menu"  class="div-black-border">
-
-            <h1>First Column</h1>
-
+          <div id="folder-menu"  class="folder-menu">
+            <div id="parent-folder"></div>
           </div>
 
           <!-- File and Directory Display -->
-          <div id="file-display" ondrop="droppedInWindow(event)" ondragover="draggedOverWindow(event)" ondragleave="draggedLeftWindow(event)" class="div-black-border">
-
-            <h1>Second Column</h1>
-            <ul id="file-name-list" class="file-folder"></ul>
+          <div id="file-display" ondrop="droppedInWindow(event)" ondragover="draggedOverWindow(event)" ondragleave="draggedLeftWindow(event)" style="box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2)">
+            <ul id="file-name-list" class="ul-file-folder"></ul>
 
           </div>
         </div>
