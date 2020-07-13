@@ -38,7 +38,7 @@ html, body {
 	grid-template-columns: 90% 10%;
 }
 
-li {
+.folder-view {
 	display: grid;
 	grid-template-columns: auto;
 	grid-template-rows: 30px 100px;

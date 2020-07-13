@@ -1,13 +1,25 @@
 const electron = require('electron');
 const {ipcRenderer} = electron;
 const {dialog} = require('electron')
-const path = require('path');
 const remote = require('electron').remote;
 const Menu = remote.require('electron').Menu;
 const MenuItem = remote.require('electron').MenuItem;
 const {getCurrentWindow, globalShortcut} = require('electron').remote;
+const classes = require('./js_scripts/classes.js');
 
-var reload = ()=>{
+var programState = {
+	'currentDirectory': null,
+	'previousDirectory': null,
+	'showDir': null,
+	'selectedFiles': [],
+	'recentSelection': null,
+	'user': null,
+	'iconSize': {},
+	'fileExplorerDropDown': null
+}
+
+
+var reload = () => {
   getCurrentWindow().reload()
 }
 
@@ -18,19 +30,6 @@ window.addEventListener('beforeunload', ()=>{
   globalShortcut.unregister('F5', reload);
   globalShortcut.unregister('CommandOrControl+R', reload);
 })
-
-
-
-var remoteDirectories;
-var programState = {
-	'currentDirectory': null,
-	'previousDirectory': null,
-	'showDir': null,
-	'selectedFiles': [],
-	'recentSelection': null,
-	'user': null,
-	'iconSize': {}
-}
 
 window.onload = startUp();
 document.addEventListener('keydown', handleKeyDown);
@@ -406,6 +405,7 @@ function createLiElements(fileBody) {
 		let liNode = document.createElement('li');
 		liNode.style.height = programState.iconSize.liHeight;
 		liNode.style.width = programState.iconSize.imgWidth;
+		liNode.classList.add('folder-view');
 
 		let text = document.createTextNode(fileList[fileIndex]);
 		let divNode = document.createElement('div')
@@ -582,64 +582,11 @@ ipcRenderer.on('update-file-names', function(event, responseBody) {
 
 
 /*********************************************
- * Folder Menu Functions (Back Trace)
+ * Folder Menu Functions
  ********************************************/
 function createFolderMenu() {
-	parentFolder = document.getElementById('parent-folder');
-	textNode = document.createTextNode(programState.user);
-
-	arrowDiv = document.createElement('div');
-	arrowDiv.classList.add('dropdown-arrow');
-	arrowDiv.style.transform = 'rotate(315deg)';
-
-	parentFolder.appendChild(arrowDiv);
-	parentFolder.appendChild(textNode);
-	parentFolder.style.marginLeft = '10px';
-	parentFolder.style.display = 'grid';
-	parentFolder.style.gridTemplateColumns = '20px auto';
-	parentFolder.style.gridTemplateRows = 'auto';
-	parentFolder.style.border = '1px solid black';
-
-	parentFolder.id = programState.user;
-	parentFolder.onclick = updateFolderMenu;
-}
-
-
-function updateFolderMenu(event) {
-	event.stopPropagation();
-	subDirectories = remoteDirectories[event.target.id].sub_directories;
-
-	while (event.target.lastChild) {
-		if (event.target.childNodes.length == 2) {
-			break;
-		}
-		event.target.removeChild(event.target.lastChild);
-	}
-
-	for (i = 0; i < subDirectories.length; i++) {
-		let dirName = subDirectories[i];
-		let id = path.join(event.target.id, dirName);
-		let textNode = document.createTextNode(dirName);
-
-		let arrowDiv = document.createElement('div');
-		arrowDiv.classList.add('dropdown-arrow');
-		arrowDiv.style.transform = 'rotate(315deg)';
-
-		let divChild = document.createElement('div');
-		divChild.id = id;
-		divChild.style.marginLeft = '10px';
-		divChild.style.display = 'grid';
-		divChild.style.gridTemplateColumns = 'auto auto';
-		divChild.style.gridTemplateRows = 'auto';
-		divChild.style.border = '1px solid black';
-
-		
-		divChild.append(arrowDiv);
-		divChild.appendChild(textNode);
-		divChild.onclick = updateFolderMenu;
-		event.target.appendChild(divChild);
-
-	}
+	let parentFolder = new FileExplorerDropDown(document.getElementById('folder-menu'), programState.user);
+	programState.fileExplorerDropDown = parentFolder;
 }
 
 
@@ -708,7 +655,7 @@ function liOnClick(event) {
 			}
 		}
 		else {
-			deselectAllElements(event)
+			deselectAllElements();
 
 			//set selected item's background color.
 			event.currentTarget.style.backgroundColor = '#4863A0';
@@ -741,7 +688,7 @@ function deselectAllElements() {
 	//Set currently selected items back to default background color
 	for (i = 0; i < programState.selectedFiles.length; i++){
 		let { dir, name, ext } = path.parse(programState.selectedFiles[i]);
-		document.getElementById(name + ext).style.backgroundColor = '#99badd';
+		document.getElementById(name + ext).style.backgroundColor = 'transparent';
 	}
 
 	//Clear selected files so only one can be selected at a time unless shift or control
