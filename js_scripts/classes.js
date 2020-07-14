@@ -20,6 +20,7 @@ class FileExplorerDropDown {
         this.parentDropDownItem.dirContainer.id = parentFolder;
 
         this.dropDownItems = {};
+        this.dropDownItems[this.parentFolder] = this.parentDropDownItem;
     }
 
     /* The id is the directory path from the parent path */
@@ -37,12 +38,9 @@ class FileExplorerDropDown {
         newItem.li.style.marginLeft = '-30px';
         newItem.li.onclick = this.onClick.bind(this);
 
-        console.log('LI width:', newItem.li.offsetWidth);
-        console.log('Div width:', newItem.dirContainer.offsetWidth);
-
         parentDOM.appendChild(newItem.li);
 
-        let newItemKey = path.join(subDirName, parentPath);
+        let newItemKey = path.join(parentPath, subDirName);
         this.dropDownItems[newItemKey] = newItem;
     }
 
@@ -55,19 +53,39 @@ class FileExplorerDropDown {
 
         let id = event.currentTarget.id;
         let dom = event.currentTarget;
+        let clickedItem = this.findItem(id);
+
+        if (clickedItem.subDirDisplayed == true) {  
+            let removedUL = dom.removeChild(clickedItem.childUL);
+            clickedItem.childUL = null;
+
+            //Free up memory from dropDownItems
+            let childrenLI = removedUL.getElementsByTagName('li');
+            let childrenLILength = childrenLI.length;
+
+            for (i = 0; i < childrenLILength; i++) {
+                delete this.dropDownItems[childrenLI[i].id];
+            }
+
+            //Rotate arrow back to closed position
+            clickedItem.dropdownArrow.style.transform = 'rotate(-45deg)';
+
+            //Change state of clickedItem.subDirDisplayed
+            clickedItem.subDirDisplayed = false;
+            return;
+        }
 
         let subDirectories = remoteDirectories[id].sub_directories;
-        let childNodeLength = dom.childNodes.length;
-
-        for (i = 2; i < childNodeLength; i++) {
-            event.target.removeChild(dom.lastChild);
-        }
 
         let ul = document.createElement('ul');
         for (i = subDirectories.length - 1; i >= 0; i--) {
             this.addItem(subDirectories[i], id, ul);
         }
         dom.appendChild(ul);
+        clickedItem.childUL = ul;
+
+        clickedItem.dropdownArrow.style.transform = 'rotate(45deg)';
+        clickedItem.subDirDisplayed = true;
     }
 
 
@@ -83,7 +101,9 @@ class DropDownItem extends Directory{
         this.dropdownArrow = this.createDropDownArrow();
         this.dirContainer = this.createDirDiv('', '');
         this.subDirectories = null;
-
+        this.subDirDisplayed = false;
+        this.childUL = null;
+        
         parentDOM.appendChild(this.dirContainer);
     }
 
@@ -91,6 +111,7 @@ class DropDownItem extends Directory{
         let arrowDiv = document.createElement('div');
         arrowDiv.classList.add('dropdown-arrow');
         arrowDiv.style.transform = 'rotate(-45deg)';
+        arrowDiv.style.transition = '250ms';
         
         return arrowDiv;
     }
@@ -101,7 +122,8 @@ class DropDownItem extends Directory{
         let fullPath;
 
         if (dirName == '') {
-            textNode = document.createTextNode(this.dirName);
+            dirName = this.dirName;
+            textNode = document.createTextNode(dirName);
             dropDownArrow = this.dropdownArrow;
             fullPath = this.fullPath;
         }
@@ -112,6 +134,7 @@ class DropDownItem extends Directory{
         }
 
         let dirContainer = document.createElement('div');
+        dirContainer.style.width = '200px';
         let columnWidth = '20px ' + (dirName.length * 8).toString() + 'px';
         
         dirContainer.appendChild(dropDownArrow);
@@ -119,7 +142,8 @@ class DropDownItem extends Directory{
 
 		dirContainer.style.display = 'grid';
 		dirContainer.style.gridTemplateColumns = columnWidth;
-        dirContainer.style.gridTemplateRows = '25px';        
+        dirContainer.style.gridTemplateRows = '25px';    
+        dirContainer.style.marginLeft = '10px';    
         return dirContainer;
     }
 }
