@@ -1,0 +1,19 @@
+#body {
+    display: grid;
+    grid-template-rows: 50px 50px 50px;
+    grid-template-columns: 125px 250px 125px;
+    background-color: #99badd;
+}
+
+#cancel-button {
+    width: auto;
+    height: auto;
+
+    background-color: rgb(61, 60, 60);
+    border-radius: 5px;
+    color: white;
+}
+
+#cancel-button:hover {
+    cursor: pointer;
+}

@@ -24,31 +24,40 @@
     <body style="background-color: #99badd;" id="mainBody" onclick="windowOnClick(event)">
       <div id="file-explorer-window" class="div-file-window-layout">
         <div id="upper-window" class="div-upper-window-layout">
-          <div>
+          <div id="first-column">
+
+            <!-- Back Arrow -->
             <div id="back-container" class="back-container" onclick="showPrevDir()">
               <div id="back-arrow" class="back-arrow"></div>
             </div>
+
+            <!-- Create new Folder -->
+            <div id="new-folder" onclick="createFolder()">
+              <img src="images/createFolder.png"></img>
+            </div>
+
           </div>
+
           <div id="current-directory-container" class="dk-style" onclick="fileSearchClick(event)" onKeyPress="submitLocation(event)">
             <div id="current-directory" class="center-current-location" onfocus="this.value = this.value;"></div>
           </div>
 
           <!--- Icon size dropdown -->
-          <div class="dk-style dropdown-layout">
-            <div class="grid-two-column">
+          <div id="icon-size-parent" class="dk-style dropdown-layout pointer-hover">
+            <div class="grid-two-column" onclick="showDropDown(event)">
               <div id="icon-size"></div>
-              <div id="dropdown-arrow" class="dropdown-arrow" onclick="showDropDown(event)">
+              <div id="dropdown-arrow" class="dropdown-arrow">
               </div> 
             </div>
 
             <div id="icon-size-content" class="icon-size-content">
-              <div onclick="iconSizeUpdate(event)" id="icon-small">
+              <div class="border-hover" onclick="iconSizeUpdate(event)" id="icon-small">
                 <p>Small</p>
               </div>
-              <div onclick="iconSizeUpdate(event)" id="icon-medium">
+              <div class="border-hover" onclick="iconSizeUpdate(event)" id="icon-medium">
                 <p>Medium</p>
               </div>
-              <div onclick="iconSizeUpdate(event)" id="icon-large">
+              <div class="border-hover" onclick="iconSizeUpdate(event)" id="icon-large">
                 <p>Large</p>
               </div>
             </div>
@@ -69,7 +78,9 @@
       </div>
 
         <!-- Self-written JavaScript -->
+      <script type="text/javascript" src='js_scripts/first.js'></script>
       <script type="text/javascript" src='js_scripts/classes.js'></script>
       <script type="text/javascript" src='js_scripts/file_explorer.js'></script>
+      <script type="text/javascript" src="js_scripts/newFolder.js"></script>
     </body>
   </html>

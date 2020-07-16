@@ -1,4 +1,4 @@
-const {app, BrowserWindow, ipcMain, Menu, dialog, DownloadItem} = require('electron');
+const {app, BrowserWindow, ipcMain, Menu, dialog, DownloadItem, shell} = require('electron');
 let {PythonShell} = require('python-shell');
 let window;
 let user;
@@ -9,7 +9,8 @@ let user;
     	height: 400,
       resizable: false,
         webPreferences: {
-        	nodeIntegration: true
+          nodeIntegration: true,
+          enableRemoteModule: true
         }
     })
     window.loadFile('login.html');
@@ -30,11 +31,6 @@ let user;
                   if  (err)  throw err;
                   response_body = JSON.parse(results[1]);
                 })
-
-                PythonShell.run('python_scripts/client.py', options, function(err, results){
-                  if  (err)  throw err;
-                  response_body = JSON.parse(results[1]);
-                })
               }
             },
             {
@@ -42,7 +38,18 @@ let user;
               click() {
                 window.webContents.openDevTools();
               }
-            } 
+            }
+          ]
+      },
+      {
+        label: 'Contributors',
+          submenu: [
+            {
+              label: 'Icons by: Icons8',
+              click() {
+                shell.openExternal('https://icons8.com');
+              }
+            }
           ]
       }
     ])

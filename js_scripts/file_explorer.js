@@ -1,23 +1,7 @@
-const electron = require('electron');
-const {ipcRenderer} = electron;
-const {dialog} = require('electron')
-const remote = require('electron').remote;
+const {ipcRenderer, dialog} = require('electron');
 const Menu = remote.require('electron').Menu;
 const MenuItem = remote.require('electron').MenuItem;
 const {getCurrentWindow, globalShortcut} = require('electron').remote;
-const classes = require('./js_scripts/classes.js');
-
-var programState = {
-	'currentDirectory': null,
-	'previousDirectory': null,
-	'showDir': null,
-	'selectedFiles': [],
-	'recentSelection': null,
-	'user': null,
-	'iconSize': {},
-	'fileExplorerDropDown': null
-}
-
 
 var reload = () => {
   getCurrentWindow().reload()
@@ -406,6 +390,7 @@ function createLiElements(fileBody) {
 		liNode.style.height = programState.iconSize.liHeight;
 		liNode.style.width = programState.iconSize.imgWidth;
 		liNode.classList.add('folder-view');
+		liNode.classList.add('pointer-hover');
 
 		let text = document.createTextNode(fileList[fileIndex]);
 		let divNode = document.createElement('div')
@@ -840,40 +825,6 @@ function showDirOnEvent(event) {
 	currentDirectoryDiv.innerHTML = programState.currentDirectory;
 }
 
-//This function shows the desired directory when the window loads.
-function showDir() {
-
-	//Remove current <li> elements
-	let fileListUl = document.getElementById('file-name-list');
-
-	while(fileListUl.firstChild) {
-		fileListUl.removeChild(fileListUl.lastChild);
-	}
-
-	//Create Directories as <li>
-	let selectedDirectory = remoteDirectories[programState.currentDirectory];
-	let fileBody = {
-		'directory': true,
-		'to_display': selectedDirectory.sub_directories,
-		'image': 'images/file_folder.png'
-	}
-
-	createLiElements(fileBody);
-
-	//Create Files as <li>
-	fileBody['directory'] = false;
-	fileBody['to_display'] = selectedDirectory.file_names;
-	fileBody['image'] = 'images/txt-file-icon.png'
-
-	createLiElements(fileBody);
-
-	//Update program state
-	programState.selectedFiles.length = 0;
-	programState.recentSelection = null;
-
-	currentDirectoryDiv = document.getElementById('current-directory');
-	currentDirectoryDiv.innerHTML = programState.currentDirectory;
-}
 
 function handleKeyDown(event) {
 	var key = event.keyCode || event.charCode;

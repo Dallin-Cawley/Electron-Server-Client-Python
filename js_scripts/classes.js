@@ -15,9 +15,13 @@ class FileExplorerDropDown {
     constructor (divContainer, parentFolder) {
         this.divContainer = divContainer;
         this.parentFolder = parentFolder;
+
         this.parentDropDownItem = new DropDownItem(parentFolder, '', divContainer);
+        this.parentDropDownItem.dirContainer.ondblclick = this.onDblClick.bind(this);
         this.parentDropDownItem.dirContainer.onclick = this.onClick.bind(this);
+        this.parentDropDownItem.dirContainer.classList.add('pointer-hover');
         this.parentDropDownItem.dirContainer.id = parentFolder;
+        this.parentDropDownItem.dirContainer.style.userSelect = 'none';
 
         this.dropDownItems = {};
         this.dropDownItems[this.parentFolder] = this.parentDropDownItem;
@@ -32,11 +36,22 @@ class FileExplorerDropDown {
         
         newItem.li = li;
         newItem.li.id = newItem.fullPath;
+        
         newItem.li.style.listStyle = 'none';
         newItem.li.style.width = 'auto';
+        newItem.li.style.maxWidth = '200px';
         newItem.li.style.height = 'auto';
         newItem.li.style.marginLeft = '-30px';
+        newItem.li.style.userSelect = 'none';
+        newItem.li.style.textOverflow = 'fade';
+        newItem.li.style.display = 'block';
+        newItem.li.style.overflow = 'hidden';
+        newItem.li.style.whiteSpace = 'nowrap';
+        newItem.li.style.float = 'left';
+
+        newItem.li.classList.add('pointer-hover');
         newItem.li.onclick = this.onClick.bind(this);
+        newItem.li.ondblclick = this.onDblClick.bind(this);
 
         parentDOM.appendChild(newItem.li);
 
@@ -86,6 +101,15 @@ class FileExplorerDropDown {
 
         clickedItem.dropdownArrow.style.transform = 'rotate(45deg)';
         clickedItem.subDirDisplayed = true;
+    }
+
+    onDblClick(event) {
+        event.stopPropagation();
+
+        programState.previousDirectory = programState.currentDirectory;
+        programState.currentDirectory = this.findItem(event.currentTarget.id).fullPath;
+
+        showDir();
     }
 
 

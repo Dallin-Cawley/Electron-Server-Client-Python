@@ -38,6 +38,20 @@ html, body {
 	grid-template-columns: 90% 10%;
 }
 
+#first-column {
+	display: grid;
+	grid-template-columns: 60% 40%;
+}
+
+#new-folder > img {
+	height: 40px;
+	width: 40px;
+}
+
+#new-folder:hover {
+	cursor: pointer;
+}
+
 .folder-view {
 	display: grid;
 	grid-template-columns: auto;
@@ -85,6 +99,10 @@ html, body {
 
 }
 
+.back-arrow:hover {
+	cursor: pointer;
+}
+
 .back-container {
 	display: grid;
 	justify-items: center;
@@ -94,6 +112,7 @@ html, body {
 	width: 30px;
 
 	border-radius: 5px;
+	margin-top: 5px;
 
 	background-color: rgb(61, 60, 60);
 }
@@ -117,12 +136,25 @@ html, body {
 	z-index: 1;
 }
 
-.border-hover:hover {
+#icon-size-parent {
+	text-indent: 10px;
+}
+
+#icon-size-content > div {
+	height: 25px;
+	width: 100%;
+}
+
+#icon-size-content > div:hover {
 	border-color: white;
 	border-radius: 5px;
 	border: solid;
 	border-width: 1px;
 
+	cursor: pointer;
+}
+
+.pointer-hover:hover {
 	cursor: pointer;
 }
 
