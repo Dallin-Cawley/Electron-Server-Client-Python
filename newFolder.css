@@ -5,15 +5,14 @@
     background-color: #99badd;
 }
 
-#cancel-button {
-    width: auto;
-    height: auto;
-
-    background-color: rgb(61, 60, 60);
-    border-radius: 5px;
-    color: white;
-}
-
 #cancel-button:hover {
     cursor: pointer;
+}
+
+#submit-button:hover {
+    cursor: pointer;
+}
+
+.p {
+    height: 25px;
 }

@@ -360,9 +360,17 @@ const download = new MenuItem({
 	}
 })
 
+const newFolder = new MenuItem({
+	label: 'Create Folder',
+	click: () => {
+		createFolder(null);
+	}
+})
+
 
 menu.append(inspectElement);
 menu.append(download);
+menu.append(newFolder);
 
 window.addEventListener('contextmenu', (e) => {
   e.preventDefault();
@@ -506,6 +514,16 @@ function createLiElements(fileBody) {
  * ipcRenderere.on() events
  *********************************************/
 
+ipcRenderer.on('new-folder', (event, folderName) => {
+	data = {
+		'folderName': folderName,
+		'current_directory': programState.currentDirectory
+	}
+
+	ipcRenderer.send('new-folder-current', JSON.stringify(data))
+	programState.showDir = true;
+  })
+
 //file-names is thrown after a successful login to localize and display
 //directory and file names.
 ipcRenderer.on('file-names', function(event, directoryInfo, user){
@@ -540,6 +558,7 @@ ipcRenderer.on('file-names', function(event, directoryInfo, user){
 
 ipcRenderer.on('update-file-names', function(event, responseBody) {
 	let updatedDirectories = responseBody['updated_directories'];
+	console.log('updated Directories:', updatedDirectories);
 
 	if (typeof updatedDirectories == 'string') {
 		updatedDirectories = JSON.parse(updatedDirectories);

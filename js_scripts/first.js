@@ -56,26 +56,28 @@ function createFolder(event) {
 	let childWindow = new BrowserWindow({ 
 		width: 500, 
 		height: 150,
-		// frame: false,
+		frame: false,
 		movable: true,
-		// resizable: false,
+		resizable: false,
 		show: false,
 		parent: BrowserWindow.getFocusedWindow(),
-		modal: true
+		modal: true,
+		webPreferences: {
+			nodeIntegration: true,
+			enableRemoteModule: true
+		}
 	});
-
 	childWindow.loadFile('newFolder.html');
 
+	programState.newFolderWindow = childWindow;
+
+
+
 	childWindow.on('ready-to-show', () => {
-		console.log('Showing newFolder window.')
 		childWindow.show();
 	  });
 
 	childWindow.on('close', (event) => {
-		console.log('closing window');
-		event.preventDefault();
 		programState.newFolderWindow = null;
 	})
-
-	programState.newFolderWindow = childWindow;
 }

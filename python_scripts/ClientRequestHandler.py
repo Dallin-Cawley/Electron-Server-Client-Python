@@ -17,10 +17,18 @@ class ClientRequestHandlerSwitch(object):
         
         return handler(function_call_body=function_call_body)
 
+    def handle_newFolder(self, function_call_body):
+        newFolderInfo = json.loads(function_call_body.get(3))
+        newFolderInfo.update({'header': 'newFolder'})
+        newFolderInfo.update({'user': function_call_body.get(2)})
+
+        self.net_socket.send(newFolderInfo)
+        return self.net_socket.response()
+
     def handle_update_server(self, function_call_body):
         self.net_socket.send({'header': 'update'})
 
-        return {'response:': 'sent'}
+        return {'response': 'sent'}
 
     def handle_login(self, function_call_body):
 

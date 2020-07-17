@@ -24,6 +24,18 @@ class ServerRequestHandlerSwitch:
 
         return handler(request_body=request_body)
 
+    def handle_newFolder(self, request_body):
+        newFolderPath = Path(request_body.get('base_dir'), request_body.get('current_directory'), request_body.get('folderName'))
+
+        try:
+            if not path.exists(newFolderPath):
+                mkdir(newFolderPath)
+                print('Directory created')
+                return self.get_current_directory_names(request_body=request_body)
+        except OSError as error:
+            print(error)
+
+
     def handle_login(self, request_body):
         if request_body.get('username') in globals.users:
             if security.check_encrypted_password(request_body.get('password'),
@@ -55,6 +67,7 @@ class ServerRequestHandlerSwitch:
         download_directory_success = []
         download_file_fail = []
         download_file_success = []
+
         if request_body.get('type') == 'directory':
             # item is directory
             list_file = ''

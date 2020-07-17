@@ -26,15 +26,27 @@
         <div id='first-column'>
             <p>Name of new folder</p>
             <p></p>
-            <div id="cancel-button" onclick="closeWindow">Cancel</div>
+            <button id="cancel-button" onclick="closeWindow(event)" class="btn btn-outline-success my-2 my-sm-0 margin-top" type="cancel">Cancel</button>
         </div>
         <div id='second-column'>
-            <h5>Second First</h5>
+            <p>1</p>
+            <form id="login-form" class="form-inline my-2 my-lg-0 center-lg">
+				      <input id="folder-name-input" class="form-control mr-lg-2 large bg-dark text-white" type="text" placeholder="Folder name" aria-label="Search" size="40" autofocus>
+            </form>
+            <p>2</p>
         </div>
         <div id='third-column'>
+          <p>3</p>
+          <p>4</p>
+          <button id='submit-button' onclick="submitFileName(event)" class="btn btn-outline-success my-2 my-sm-0 margin-top" type="submit">Create File</button>
         </div>
 
     </body>
     <!-- Self written JavaScript -->
+    <script>
+      function getDocument() {
+        return document;
+      }
+    </script>
     <script type="text/javascript" src="js_scripts/newFolder.js"></script>
   </html>

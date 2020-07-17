@@ -144,7 +144,6 @@ let user;
     options = {
       args:['delete', user, delete_list, current_directory]
     }
-    console.log()
 
     PythonShell.run('python_scripts/client.py', options, function(err, results) {     
       if  (err) throw err;
@@ -153,6 +152,29 @@ let user;
 
       window.webContents.send('update-file-names', response_body);
     })
+  })
+
+  ipcMain.on('new-folder', (event, folderName) => {
+    window.webContents.send('new-folder', folderName)
+  })
+
+  ipcMain.on('new-folder-current', (event, newFolderInfo) => {
+
+    options = {
+      args: ['newFolder', user, newFolderInfo]
+    }
+
+    PythonShell.run('python_scripts/client.py', options, function(err, results) {     
+      if  (err) throw err;
+      let newFolderStatus = {}
+      newFolderStatus['updated_directories'] = JSON.parse(results[1]);
+      // console.log('results:', results);
+      console.log('New Folder Response Body:', newFolderStatus);
+
+      window.webContents.send('update-file-names', newFolderStatus);
+
+    })
+
   })
 
   function downloadFiles(dialog_info, user, selected_files) {
