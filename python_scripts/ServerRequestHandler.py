@@ -6,7 +6,7 @@ import sys
 
 from security import security
 from sys import getsizeof
-from shutil import rmtree
+from shutil import rmtree, move
 from pathlib import PurePath, Path
 from os import path, mkdir, walk, remove
 
@@ -180,101 +180,123 @@ class ServerRequestHandlerSwitch:
 
         return list_dir_names, dict_file_names
 
+    def move(self, items):
+        directories = items.get('directories')
+        files = items.get('files')
+        base_dir = items.get('base_dir')
+        user = items.get('user')
+        destination = path.join(items.get('base_dir'), items.get('sending_to'))
+        print('directories', directories, '\n')
+        # Move all directories
+        for directory_list in directories:
+            for directory in directory_list:
+                source = path.join(base_dir, user, directory)
+                move(source, destination)
+
+        # Move all Files
+        for file in files:
+            print("file:", file)
+            source = path.join(base_dir, file)
 
     def handle_upload(self, request_body):
         dropped_info = self.con_socket.request()
+        print('dropped_info', dropped_info)
 
-        directories = dropped_info.get('directories')
-        files = dropped_info.get('files')
-        dir_files = dropped_info.get('dir_files')
-        paste_dir = dropped_info.get('current_directory')
+        if dropped_info.get('move') == 'true':
+            dropped_info.update({'base_dir': request_body.get('base_dir')})
+            self.move(dropped_info)
+        else:
 
-        base_dir = Path(request_body.get('base_dir'), paste_dir)
+            directories = dropped_info.get('directories')
+            files = dropped_info.get('files')
+            dir_files = dropped_info.get('dir_files')
+            paste_dir = dropped_info.get('sending_to')
 
-        # Create Directories if they don't already exist from sent list of directories
-        directory_list = []
-        try:
-            for dir_list in directories:
-                for dir in dir_list:
+            base_dir = Path(request_body.get('base_dir'), paste_dir)
 
-                    if '\\' in dir:
-                        dir = dir.replace('\\', '/')
-
-                    full_path = Path(base_dir, dir)
-                    print("Full_path:", full_path)
-
-                    if not path.exists(full_path):
-                        mkdir(full_path)
-                        directory_list.append(dir)
-        except IOError as ioerror:
-            error = "IOError: unable to create Directory....\n\t" + ioerror
-            log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
-        
-        log.log_directory_upload(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), directory_list=directory_list)
-
-        # Save Directory Files
-        file_list = []
-        self.con_socket.set_timeout(5)
-        for file_key in dir_files:
+            # Create Directories if they don't already exist from sent list of directories
+            directory_list = []
             try:
-                file_info = dir_files.get(file_key)
+                for dir_list in directories:
+                    for dir in dir_list:
 
-                # Ask client for next file in list
-                file_request = {
-                    'file': file_info.get('file_full_path')
-                }
-                self.con_socket.send(file_request)
+                        if '\\' in dir:
+                            dir = dir.replace('\\', '/')
 
-                # Recieve the file bytes and write them
-                file_bytes = self.con_socket.recieve_file()
-                file_sub_path = file_info.get('file_sub_path')
+                        full_path = Path(base_dir, dir)
+                        print("Full_path:", full_path)
 
-                if '\\' in file_sub_path:
-                    file_sub_path = file_sub_path.replace('\\', '/')
-
-                opened_file = open(Path(request_body.get('base_dir'), paste_dir, file_sub_path), 'wb')
-                opened_file.write(file_bytes)
-                opened_file.close()
-                file_list.append(file_sub_path)
-
+                        if not path.exists(full_path):
+                            mkdir(full_path)
+                            directory_list.append(dir)
             except IOError as ioerror:
-                error = "There was an error saving file " + file_info.get('file_sub_path') + "\n\t" + "ERROR: " + str(ioerror) + "\n"
+                error = "IOError: unable to create Directory....\n\t" + ioerror
                 log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
-                continue
+            
+            log.log_directory_upload(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), directory_list=directory_list)
 
-        self.con_socket.set_timeout(None)
+            # Save Directory Files
+            file_list = []
+            self.con_socket.set_timeout(5)
+            for file_key in dir_files:
+                try:
+                    file_info = dir_files.get(file_key)
 
-        # Save Individual Files
-        for file in files:
-            try:
-                print("File:", file)
-                file_path = file.get('path')
+                    # Ask client for next file in list
+                    file_request = {
+                        'file': file_info.get('file_full_path')
+                    }
+                    self.con_socket.send(file_request)
 
-                # Ask client for next file in list
-                file_request = {
-                    'file': file_path
-                }
-                self.con_socket.send(file_request)
+                    # Recieve the file bytes and write them
+                    file_bytes = self.con_socket.recieve_file()
+                    file_sub_path = file_info.get('file_sub_path')
 
-                # Recieve the file bytes and write them
-                file_bytes = self.con_socket.recieve_file()
-                opened_file = open(Path(request_body.get('base_dir'), paste_dir, file.get('name')), 'wb')
-                opened_file.write(file_bytes)
-                opened_file.close()
-                file_list.append(file.get('name'))
+                    if '\\' in file_sub_path:
+                        file_sub_path = file_sub_path.replace('\\', '/')
 
-            except IOError as ioerror:
-                error = "There was an error saving file " + file.get('name') + "\n\t" + ioerror
-                log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
-                continue
+                    opened_file = open(Path(request_body.get('base_dir'), paste_dir, file_sub_path), 'wb')
+                    opened_file.write(file_bytes)
+                    opened_file.close()
+                    file_list.append(file_sub_path)
 
-        log.log_file_upload(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), file_list=file_list)
+                except IOError as ioerror:
+                    error = "There was an error saving file " + file_info.get('file_sub_path') + "\n\t" + "ERROR: " + str(ioerror) + "\n"
+                    log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
+                    continue
+
+            self.con_socket.set_timeout(None)
+
+            # Save Individual Files
+            for file in files:
+                try:
+                    print("File:", file)
+                    file_path = file.get('path')
+
+                    # Ask client for next file in list
+                    file_request = {
+                        'file': file_path
+                    }
+                    self.con_socket.send(file_request)
+
+                    # Recieve the file bytes and write them
+                    file_bytes = self.con_socket.recieve_file()
+                    opened_file = open(Path(request_body.get('base_dir'), paste_dir, file.get('name')), 'wb')
+                    opened_file.write(file_bytes)
+                    opened_file.close()
+                    file_list.append(file.get('name'))
+
+                except IOError as ioerror:
+                    error = "There was an error saving file " + file.get('name') + "\n\t" + ioerror
+                    log.main_log(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), service_provided=error)
+                    continue
+
+            log.log_file_upload(user=dropped_info.get('user'), base_dir=request_body.get('base_dir'), file_list=file_list)
         
         # Inform client that all files have been saved
         self.con_socket.send({"file": 'done'})
 
-
-        request_body.update({'current_directory': paste_dir})
+        request_body.update({'current_directory': dropped_info.get('current_directory')})
 
         final_body = {
             'response': 'Directory Saved',
@@ -287,6 +309,9 @@ class ServerRequestHandlerSwitch:
 
     def handle_delete(self, request_body):
         deleting_items = request_body.get('to_delete')
+        if isinstance(deleting_items[0], list):
+            deleting_items = deleting_items[0]
+        print('\nDeleting Items', deleting_items, '\n')
 
         for item_del in deleting_items:
             

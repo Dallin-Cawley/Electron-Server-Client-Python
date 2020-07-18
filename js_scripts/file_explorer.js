@@ -347,6 +347,7 @@ const inspectElement = new MenuItem({
     remote.getCurrentWindow().inspectElement(rightClickPosition.x, rightClickPosition.y)
   }
 });
+
 const download = new MenuItem({
 	label: 'Download',
 	click: () => {
@@ -462,25 +463,50 @@ function createLiElements(fileBody) {
 				event.preventDefault();
 				event.stopPropagation();
 				
-				//Get path of where the file is being moved to
-		    	let dropDirName = path.join(programState.currentDirectory, event.target.id);
-		    	let endLocation = remoteDirectories[dropDirName].path;
+				//Get a list of all items dropped into window
+				let droppedItems = event.dataTransfer.files
 
-		    	//Get path of files to move
-		    	let filesToSendPath = [];
-		    	let eventFilesLength = event.dataTransfer.files.length;
-		    	let eventFiles = event.dataTransfer.files;
+				//Used to hold directory and file names seperately
+				directories = [];
+				files = [];
 
-		    	for (let i = 0; i < eventFilesLength; i++){
-		    		filesToSendPath.push(eventFiles[i].path);
-		    	}
+				//Check to see which are files and which are directories
+				for (i = 0; i < droppedItems.length; i++) {
+					item = droppedItems[i];
+					
+					if (item.type == '') {  //Item is a directory
 
-		    	dropBody = {
-		    		'sending_to': endLocation,
-		    		'files_to_send': filesToSendPath
-		    	}
+						let directoryInfo = {
+							'name': item.name,
+							'path': item.path,
+							'size': item.size,
+						}
+					directories.push(directoryInfo)
+					}
+					else {   //Item is a file
 
-		    	ipcRenderer.send('ondrop', JSON.stringify(dropBody));
+						let fileInfo = {
+							'name': item.name,
+							'path': item.path,
+							'size': item.size,
+							'type': item.type
+						}
+						files.push(fileInfo)
+					}
+				}
+
+				droppedItems = {
+					'files': files,
+					'directories': directories,
+					'sending_to': path.join(programState.currentDirectory, event.target.id),
+					'current_directory': programState.currentDirectory,
+					'delete_orig': 'true',
+					'move': 'true'
+				}
+				
+				programState.showDir = true;
+				event.currentTarget.style.backgroundColor = '#99badd';
+				ipcRenderer.send('ondrop', JSON.stringify(droppedItems));
 
 			}
 
@@ -495,7 +521,7 @@ function createLiElements(fileBody) {
 	   		liNode.ondragleave = (event) => {
 				event.preventDefault();
 				event.stopPropagation();
-				event.currentTarget.style.backgroundColor = '#99badd';
+				event.currentTarget.style.backgroundColor = 'transparent';
 			}
 
 			//Double Click Event
@@ -778,7 +804,8 @@ function droppedInWindow(event) {
 	droppedItems = {
 		'files': files,
 		'directories': directories,
-		'current_directory': programState.currentDirectory
+		'sending_to': programState.currentDirectory,
+		'current_directory': programState.currentDirectory,
 	}
 	   
 	programState.showDir = true;

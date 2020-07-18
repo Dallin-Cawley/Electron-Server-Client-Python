@@ -136,7 +136,7 @@ class ClientRequestHandlerSwitch(object):
 
         # List of File objects
         files = dropped_items.get('files')
-        current_directory = dropped_items.get('current_directory')
+        paste_dir = dropped_items.get('sending_to')
 
         # Get the directory and file names of each sub-directory recursively
         list_dir_names = []
@@ -151,8 +151,10 @@ class ClientRequestHandlerSwitch(object):
             'directories': list_dir_names,
             'dir_files': dict_file_names,
             'files': files,
-            'current_directory': current_directory,
-            'user': user
+            'sending_to': paste_dir,
+            'current_directory': dropped_items.get('current_directory'),
+            'user': user,
+            'move': dropped_items.get('move')
         }
 
         request_body = {
