@@ -99,9 +99,11 @@ class ServerRequestHandlerSwitch:
                 try:
                     if file_name  == 'done':
                         break
-                    print("")
+                    print("\nFile name before: ", file_name)
                     file_name = file_name.replace('\\', '/')
                     file_name = Path(file_name)
+                    print("\nFile name after: ", file_name)
+
                     opened_file = open(file_name, 'rb')
                     file_bytes = opened_file.read()
                     opened_file.close()
