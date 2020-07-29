@@ -99,7 +99,7 @@ class ServerRequestHandlerSwitch:
                 try:
                     if file_name  == 'done':
                         break
-
+                    file_name = Path(file_name)
                     opened_file = open(file_name, 'rb')
                     file_bytes = opened_file.read()
                     opened_file.close()
