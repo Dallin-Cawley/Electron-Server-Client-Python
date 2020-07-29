@@ -119,11 +119,12 @@ class ServerRequestHandlerSwitch:
                     download_file_success.append(path.basename(file_name))
                     file_name = self.con_socket.request().get('file')
                 except FileNotFoundError:
-                    download_file_fail.append(path.basename(file_name))
-                    status = {
-                        'found': 'false'
-                    }
-                    self.con_socket.send(status)
+                    # download_file_fail.append(path.basename(file_name))
+                    # status = {
+                    #     'found': 'false'
+                    # }
+                    file_name = Path(base_dir, item)
+                    # self.con_socket.send(status)
                     continue
         else:
             # item is file
