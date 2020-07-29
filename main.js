@@ -194,7 +194,7 @@ let user;
         PythonShell.run('python_scripts/client.py', options, function(err, results) {     
           if  (err) throw err;
           console.log('\nresults: ', results); 
-
+          print("results: ", results);
           download_status = JSON.parse(results[1])
           console.log("\nDownload Status:", download_status, '\n')
           window.webContents.send('download-status', download_status)

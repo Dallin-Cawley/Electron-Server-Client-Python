@@ -128,7 +128,7 @@ class ServerRequestHandlerSwitch:
                     continue
         else:
             # item is file
-
+            item = item.replace('\\'. '/')
             file_name = Path(base_dir, item)
             try:
                 opened_file = open(file_name, 'rb')
