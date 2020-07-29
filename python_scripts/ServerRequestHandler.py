@@ -94,12 +94,12 @@ class ServerRequestHandlerSwitch:
             self.con_socket.send({'file_list': list_file})
             # begin taking requests
             file_name = self.con_socket.request().get('file')
-
+            print("\nFile name before: ", file_name)
             while True:
                 try:
                     if file_name  == 'done':
                         break
-                    print("\nFile name before: ", file_name)
+
                     file_name = file_name.replace('\\', '/')
                     file_name = Path(file_name)
                     print("\nFile name after: ", file_name)
