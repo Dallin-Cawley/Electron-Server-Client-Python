@@ -10,6 +10,7 @@ from os import path, system
 from pathlib import Path
 from net_socket import ServerSocket
 from ServerRequestHandler import ServerRequestHandlerSwitch
+from PlaidRequestHandler import PlaidRequestHandler
 
 shut_down = False
 
@@ -82,20 +83,18 @@ def handle_client_connection(connection, base_dir):
     
     # Handle the connection
     connection.send({'response': 'Connection Accepted'})
-    request_handler = ServerRequestHandlerSwitch(connection)
     while True:
         try:
             # Get request from client
             request_body = connection.request()
             request_body.update({'base_dir': base_dir})
             print("\nRequest Body:", request_body, "\n")
+            header = request_body.get("header")
 
-            if request_body.get('header') == 'update':
+            if header == 'update':
                 print("Updating Shut_Down")
                 shut_down = True
                 break
-
-            header = request_body.get("header")
 
             # When the Client wishes to disconnect
             if header == 'quit':
@@ -104,14 +103,21 @@ def handle_client_connection(connection, base_dir):
                 }
                 connection.send(body)
                 break
+
+            print("Header: ", header)
             
-            response = request_handler.handle_request(header=header, request_body=request_body)
-            connection.send(response)
+            if 'plaid' in header:
+                plaid_handler = PlaidRequestHandler(connection)
+                connection.send(plaid_handler.handle_request(header=header, request_body=request_body))
+            else:
+                request_handler = ServerRequestHandlerSwitch(connection)
+                connection.send(request_handler.handle_request(header=header, request_body=request_body))
 
         except ValueError:
             data = {
             'response': 'Unable to parse Json. Please try again'
             }
+            connection.send(data)
             continue
 
     connection.close()

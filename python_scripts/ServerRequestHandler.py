@@ -35,7 +35,6 @@ class ServerRequestHandlerSwitch:
         except OSError as error:
             print(error)
 
-
     def handle_login(self, request_body):
         if request_body.get('username') in globals.users:
             if security.check_encrypted_password(request_body.get('password'),
@@ -119,12 +118,11 @@ class ServerRequestHandlerSwitch:
                     download_file_success.append(path.basename(file_name))
                     file_name = self.con_socket.request().get('file')
                 except FileNotFoundError:
-                    # download_file_fail.append(path.basename(file_name))
-                    # status = {
-                    #     'found': 'false'
-                    # }
-                    file_name = Path(base_dir, item)
-                    # self.con_socket.send(status)
+                    download_file_fail.append(path.basename(file_name))
+                    status = {
+                        'found': 'false'
+                    }
+                    self.con_socket.send(status)
                     continue
         else:
             # item is file
