@@ -1,11 +1,11 @@
-import plaid
+from plaid.client import Client
 
 class PlaidRequestHandler:
 
     def __init__(self, con_socket):
         self.con_socket = con_socket
 
-        self.client = plaid.Client(
+        self.client = Client(
                 client_id='5f0de1225f640500125e6943',
                 secret='ee35c6647b372ddde984771b4a1129',
                 environment='sandbox',
