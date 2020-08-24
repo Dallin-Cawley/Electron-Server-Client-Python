@@ -9,8 +9,8 @@ class PlaidRequestHandler:
                 client_id='5f0de1225f640500125e6943',
                 secret='ee35c6647b372ddde984771b4a1129',
                 environment='sandbox',
-                api_version='2018-05-22',
-                public_key='91999e67d179ebcadfd577c952ede4')
+                api_version='2018-05-22',)
+                # public_key='91999e67d179ebcadfd577c952ede4')
 
     def handle_request(self, header, request_body):
         if " " in header:
