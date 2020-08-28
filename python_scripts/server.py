@@ -108,7 +108,9 @@ def handle_client_connection(connection, base_dir):
             
             if 'plaid' in header:
                 plaid_handler = PlaidRequestHandler(connection)
-                connection.send(plaid_handler.handle_request(header=header, request_body=request_body))
+                json = plaid_handler.handle_request(header=header, request_body=request_body)
+                print("Response", json)
+                connection.send(json)
             else:
                 request_handler = ServerRequestHandlerSwitch(connection)
                 print("Sending response.")
