@@ -111,6 +111,7 @@ def handle_client_connection(connection, base_dir):
                 connection.send(plaid_handler.handle_request(header=header, request_body=request_body))
             else:
                 request_handler = ServerRequestHandlerSwitch(connection)
+                print("Sending response.")
                 connection.send(request_handler.handle_request(header=header, request_body=request_body))
 
         except ValueError:
